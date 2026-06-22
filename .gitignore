@@ -1,0 +1,14 @@
+# Gizli bilgiler — ASLA commit etme
+.env
+.env.*
+!.env.example
+
+# Bağımlılıklar / derleme
+node_modules/
+.vercel/
+
+# Geçici / log
+*.log
+screenshot-*.png
+_verify*.py
+_vlive*.py

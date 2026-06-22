@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Winning Product Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🏆</span>
+      <div>
+        <h1>Winning Product Finder</h1>
+        <p class="tagline">Meta Reklam Kütüphanesi'nden kazanan ürünleri keşfet</p>
+      </div>
+    </div>
+    <div class="mode-pill" id="modePill" title="Veri kaynağı">
+      <span class="dot"></span><span id="modeLabel">Demo modu</span>
+    </div>
+  </header>
+
+  <section class="search-panel">
+    <div class="search-row">
+      <div class="field grow">
+        <label>Anahtar kelime / niş</label>
+        <input id="keyword" type="text" placeholder="örn. portable blender, posture, led..." />
+      </div>
+      <div class="field">
+        <label>Kategori</label>
+        <select id="niche"><option value="all">Tümü</option></select>
+      </div>
+      <div class="field small">
+        <label>Min. aktif gün</label>
+        <input id="minDays" type="number" min="0" value="0" />
+      </div>
+      <div class="field">
+        <label>Sırala</label>
+        <select id="sort">
+          <option value="winningScore">Kazanan Skoru</option>
+          <option value="daysActive">Aktif Gün</option>
+          <option value="adCount">Reklam Sayısı</option>
+          <option value="estPrice">Fiyat</option>
+        </select>
+      </div>
+      <button id="searchBtn" class="btn primary">🔍 Ürünleri Bul</button>
+    </div>
+
+    <div class="search-row sub">
+      <div class="seg">
+        <button class="seg-btn active" data-source="demo">Demo verisi</button>
+        <button class="seg-btn" data-source="live">Canlı (Apify)</button>
+      </div>
+      <div class="field grow live-only" id="tokenField" style="display:none">
+        <label>Apify API Token</label>
+        <input id="apifyToken" type="password" placeholder="apify_api_..." />
+      </div>
+      <div class="spacer"></div>
+      <div class="view-toggle">
+        <button class="seg-btn active" data-view="cards">▦ Kart</button>
+        <button class="seg-btn" data-view="table">▤ Tablo</button>
+      </div>
+      <button id="exportBtn" class="btn ghost">⬇ CSV indir</button>
+    </div>
+  </section>
+
+  <section class="stats" id="stats"></section>
+
+  <section id="resultsArea">
+    <div id="loading" class="state" style="display:none">
+      <div class="spinner"></div><p>Ürünler taranıyor...</p>
+    </div>
+    <div id="empty" class="state" style="display:none">
+      <p>😕 Sonuç bulunamadı. Filtreleri gevşet ya da farklı bir kelime dene.</p>
+    </div>
+    <div id="cards" class="cards-grid"></div>
+    <div id="tableWrap" class="table-wrap" style="display:none">
+      <table id="table">
+        <thead><tr>
+          <th>#</th><th>Ürün</th><th>Kategori</th><th>Advertiser</th>
+          <th>Aktif Gün</th><th>Reklam</th><th>Fiyat</th><th>Puan</th><th>Skor</th><th>Linkler</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Winning Product Finder · Demo · <span id="footCount">0</span> ürün</span>
+    <span class="muted">Kazanan skoru = aktif süre + reklam ölçeği + puan</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
