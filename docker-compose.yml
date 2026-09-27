@@ -1,0 +1,43 @@
+# Yerel geliştirme: uygulama + Postgres birlikte.
+# Çalıştır:  docker compose up --build
+# Uygulama:  http://localhost:4545   |   Postgres:  localhost:5432
+#
+# Not: DATABASE_URL verildiği için uygulama Postgres repository'sini kullanır.
+# Şema ilk açılışta db/schema.sql ile otomatik yüklenir.
+
+services:
+  app:
+    build: .
+    ports:
+      - "4545:4545"
+    environment:
+      NODE_ENV: production
+      PORT: 4545
+      DATABASE_URL: postgres://wpf:wpf@db:5432/wpf
+      DATABASE_SSL: "false"
+      # APIFY_TOKEN: "buraya-canli-mod-icin"   # .env üzerinden vermek daha güvenli
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wpf
+      POSTGRES_PASSWORD: wpf
+      POSTGRES_DB: wpf
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Şemayı ilk başlatmada otomatik uygula
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wpf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

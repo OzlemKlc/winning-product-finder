@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.vercel
+*.log
+test
+docs
+automation
+.mcp.json
+README.md
+ARCHITECTURE.md

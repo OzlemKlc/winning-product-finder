@@ -1,13 +1,30 @@
 {
   "name": "winning-product-finder",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Meta Ad Library'den kazanan ürünleri bulan mini web uygulaması",
+  "description": "Meta Reklam Kütüphanesi'nden kazanan ürünleri bulan, katmanlı mimariye sahip AI-native ürün araştırma sistemi",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test",
+    "db:schema": "psql \"$DATABASE_URL\" -f db/schema.sql"
   },
+  "keywords": [
+    "ecommerce",
+    "product-research",
+    "meta-ad-library",
+    "apify",
+    "scoring",
+    "nodejs"
+  ],
+  "author": "Özlem Kılıç",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "pg": "^8.12.0"
   }
 }
