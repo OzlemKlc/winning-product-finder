@@ -1,6 +1,6 @@
 // Winning Product Finder — frontend
 const $ = (s) => document.querySelector(s);
-const state = { source: 'demo', view: 'cards', items: [] };
+const state = { source: 'demo', view: 'cards', items: [], analyze: false };
 
 const NICHE_EMOJI = {
   'Mutfak': '🍹', 'Sağlık': '💆', 'Ev Dekor': '💡', 'Elektronik': '📽️',
@@ -73,6 +73,7 @@ function cardHTML(p, i) {
         <span class="advertiser">👤 <b>${esc(p.advertiser)}</b></span>
       </div>
       <p class="adcopy">${esc(p.adCopy || '')}</p>
+      ${p.insight ? `<div class="insight">🧠 <b>${esc(p.insight.hook || '')}</b>${p.insight.angle ? ` <span class="chip angle">${esc(p.insight.angle)}</span>` : ''}${p.insight.audience ? `<span class="aud">👥 ${esc(p.insight.audience)}</span>` : ''}</div>` : ''}
       <div class="metrics">
         <div class="metric"><div class="v days">${p.daysActive}g</div><div class="k">Aktif süre</div></div>
         <div class="metric"><div class="v">${p.adCount}</div><div class="k">Reklam</div></div>
@@ -144,7 +145,8 @@ async function search() {
     niche: $('#niche').value,
     minDays: Number($('#minDays').value) || 0,
     sort: $('#sort').value,
-    token: $('#apifyToken') ? $('#apifyToken').value.trim() : ''
+    token: $('#apifyToken') ? $('#apifyToken').value.trim() : '',
+    analyze: state.analyze
   };
   $('#loading').style.display = 'block';
   $('#cards').innerHTML = ''; $('#table tbody').innerHTML = ''; $('#empty').style.display = 'none';
@@ -201,6 +203,9 @@ document.querySelectorAll('.seg-btn[data-view]').forEach(b => b.addEventListener
   state.view = b.dataset.view;
   applyView();
 }));
+
+const aiEl = document.getElementById('aiAnalyze');
+if (aiEl) aiEl.addEventListener('change', () => { state.analyze = aiEl.checked; });
 
 // initial load
 search();

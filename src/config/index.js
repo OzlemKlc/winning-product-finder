@@ -73,6 +73,22 @@ const config = {
   },
 
   /**
+   * Anthropic (Claude) — reklam metni analizi (tool/function-calling).
+   * API anahtarı verilmezse AI analiz otomatik olarak devre dışı kalır (no-op).
+   */
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    version: process.env.ANTHROPIC_VERSION || '2023-06-01',
+    timeoutMs: int(process.env.ANTHROPIC_TIMEOUT_MS, 30_000),
+  },
+
+  /** LLM analiz davranışı — maliyet kontrolü için yalnızca ilk N ürün analiz edilir. */
+  llm: {
+    analyzeTopN: int(process.env.LLM_ANALYZE_TOP_N, 5),
+  },
+
+  /**
    * Kalıcılık katmanı. DATABASE_URL (veya Supabase bilgileri) verilmezse
    * uygulama otomatik olarak in-memory repository'ye düşer ve env'siz çalışır.
    */
@@ -105,5 +121,11 @@ config.database.isConfigured = Boolean(config.database.url || config.database.su
  * Canlı (Apify) mod için sunucu tarafında token var mı?
  */
 config.apify.isConfigured = Boolean(config.apify.token);
+
+/**
+ * AI analiz (Anthropic) kullanılabilir mi? API anahtarı yoksa özellik sessizce kapalı.
+ */
+config.anthropic.isConfigured = Boolean(config.anthropic.apiKey);
+config.llm.enabled = config.anthropic.isConfigured;
 
 module.exports = { config, loadDotEnv, ROOT_DIR };

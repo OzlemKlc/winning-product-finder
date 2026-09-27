@@ -42,7 +42,10 @@ function validateSearchQuery(raw = {}) {
 
   const token = typeof raw.token === 'string' ? raw.token.trim() : '';
 
-  return { source, keyword, niche, minDays, sort, count, token };
+  // AI analiz (LLM tool-calling) talebi — opsiyonel, best-effort
+  const analyze = raw.analyze === true || raw.analyze === 'true' || raw.analyze === 1;
+
+  return { source, keyword, niche, minDays, sort, count, token, analyze };
 }
 
 module.exports = { validateSearchQuery, ALLOWED_SOURCES, ALLOWED_SORTS };

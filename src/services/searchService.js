@@ -17,6 +17,7 @@ const { logger } = require('../utils/logger');
 const { getProvider } = require('../providers');
 const { getRepository } = require('../repositories');
 const { enrich } = require('../domain/product');
+const { enrichWithInsights } = require('./insightService');
 const { validateSearchQuery } = require('../validation/searchQuery');
 
 /**
@@ -54,6 +55,12 @@ async function runSearch(rawQuery = {}, opts = {}) {
   // 4) Sort — istenen anahtara göre azalan
   const key = query.sort;
   items.sort((a, b) => (b[key] || 0) - (a[key] || 0));
+
+  // 4b) AI analiz (opsiyonel, best-effort) — yalnızca istenirse ve API varsa,
+  //     maliyet için sıralamanın en üstündeki N ürün analiz edilir.
+  if (query.analyze) {
+    items = await enrichWithInsights(items);
+  }
 
   // 5) Summary
   const summary = { ...summarize(items), source: provider.name };
