@@ -1,14 +1,29 @@
-# Gizli bilgiler — ASLA commit etme
+# === Gizli bilgiler — ASLA commit etme ===
 .env
 .env.*
 !.env.example
 
-# Bağımlılıklar / derleme
+# API anahtarları / MCP yapılandırması (yerel geliştirme)
+.mcp.json
+*.pem
+*.key
+secrets/
+
+# === Bağımlılıklar / derleme ===
 node_modules/
 .vercel/
+dist/
+build/
 
-# Geçici / log
+# === Geçici / log / işletim sistemi ===
 *.log
+logs/
 screenshot-*.png
 _verify*.py
 _vlive*.py
+.DS_Store
+Thumbs.db
+
+# === Editör ===
+.vscode/
+.idea/
