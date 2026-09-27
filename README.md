@@ -1,104 +1,103 @@
 # 🏆 Winning Product Finder
 
-> Meta (Facebook/Instagram) Reklam Kütüphanesi'nden **kazanan ürünleri** keşfeden, katmanlı mimariye sahip bir ürün araştırma sistemi.
+> A layered product-research tool that surfaces **winning products** from the Meta (Facebook/Instagram) Ad Library.
 
-Hangi ürünler reklam veriyor, **ne kadar süredir aktif**, hangi kreatiflerle çalışıyor — hepsini deterministik bir **100 puanlık kazanan skoru** ile sıralar, kart/tablo olarak gösterir, CSV'ye aktarır ve (opsiyonel) her aramayı Postgres/Supabase'e kaydeder.
+It ranks products with a deterministic **100-point weighted "winning score"**, shows them as cards or a table, exports to CSV, and (optionally) persists every search to Postgres/Supabase. An optional AI layer analyses ad copy with Claude via **tool/function-calling**.
 
 <p align="center">
   <img alt="Node" src="https://img.shields.io/badge/Node-%3E%3D18-informational">
   <img alt="Architecture" src="https://img.shields.io/badge/architecture-layered-blueviolet">
-  <img alt="DB" src="https://img.shields.io/badge/db-Postgres%2FSupabase%20(opsiyonel)-success">
+  <img alt="DB" src="https://img.shields.io/badge/db-Postgres%2FSupabase%20(optional)-success">
   <img alt="Tests" src="https://img.shields.io/badge/tests-node%3Atest-brightgreen">
 </p>
 
 ---
 
-## Neden bu proje?
+## Why this project
 
-Ürün araştırmasında asıl mesele "AI'a en iyi ürünü sordurmak" değil; **farklı kaynaklardan gelen veriyi toplayıp, doğrulayıp, deterministik kurallarla değerlendirip** yalnızca gerçekten yorum gerektiren yerde modele başvurmak. Sistem bu yüzden tek bir dev prompt değil, **sorumlulukları ayrılmış katmanlardan** oluşur.
+The real challenge in product research isn't "ask an AI for the best product." It's **collecting data from different sources, validating it, evaluating it with deterministic rules**, and calling a model only where genuine interpretation is needed. That's why the system is a set of **single-responsibility layers**, not one giant prompt.
 
-Detaylı mimari için → [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+Full design write-up → [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 
 ---
 
-## Hızlı başlangıç
+## Quick start
 
 ```bash
-# 1) Bağımlılık YOK (demo mod) — sadece çalıştır:
+# No dependencies (demo mode) — just run:
 node src/index.js
 #   → http://localhost:4545
 
-# veya npm ile
+# or with npm
 npm start
 ```
 
-> Demo mod internet/hesap/DB olmadan da her zaman çalışır. Aranan kelime demo
-> listesinde yoksa, kelimeye özel **deterministik** (tekrar-üretilebilir) ürünler üretilir.
+> Demo mode always works — no internet, account, or database required. If a keyword
+> isn't in the demo set, the app generates keyword-specific **deterministic**
+> (reproducible) products.
 
-### Canlı mod (Apify)
+### Live mode (Apify)
 
 ```bash
 cp .env.example .env
-# .env içine APIFY_TOKEN yaz  → https://console.apify.com (Settings → API)
+# put APIFY_TOKEN in .env  → https://console.apify.com (Settings → API)
 npm start
 ```
 
-Arayüzde **Canlı (Apify)** sekmesine geç. Token sunucuda tanımlıysa arayüzde girmene gerek yoktur (tercih edilen, daha güvenli yol).
+Switch to the **Canlı (Apify)** tab in the UI. If the token is set on the server, you don't need to enter it in the UI (the preferred, more secure path).
 
-### Veritabanı ile (opsiyonel — Postgres / Supabase)
-
-```bash
-# .env içine bağlantı bilgisini ekle:
-# DATABASE_URL=postgresql://...   (Supabase: Project Settings → Database → Connection string)
-npm install            # pg sürücüsünü kurar
-npm run db:schema      # db/schema.sql'i uygular
-npm start              # artık her arama kaydedilir; GET /api/searches ile geçmiş
-```
-
-### Docker (uygulama + Postgres)
+### AI analysis (Claude tool-calling)
 
 ```bash
-docker compose up --build
-#   Uygulama: http://localhost:4545   |   Postgres: localhost:5432 (şema otomatik yüklenir)
-```
-
----
-
-## Özellikler
-
-- 🔍 Anahtar kelime / kategori / minimum aktif gün filtreleri
-- 🏆 **100 puanlık ağırlıklı kazanan skoru** (config-driven) + skor kırılımı
-- 🧠 **AI analiz (opsiyonel)**: Claude ile reklam metninden niş/hook/açı çıkarımı (**tool/function-calling**)
-- ▦ Kart ve ▤ Tablo görünümü, ⬇ CSV dışa aktarma (Excel uyumlu, UTF-8)
-- 📡 İki veri kaynağı: **Demo** (offline) ve **Canlı** (Apify → Meta Ad Library)
-- 🗄️ Opsiyonel kalıcılık: Postgres/Supabase; yoksa otomatik **in-memory** fallback
-- 🧪 Skorlama + doğrulama + AI analiz için birim testler (`node:test`, sıfır bağımlılık)
-- 🐳 Docker + docker-compose, `/health` probe'u
-
-### AI analiz (Claude tool-calling)
-
-```bash
-# .env içine ekle:  ANTHROPIC_API_KEY=sk-ant-...   (opsiyonel: ANTHROPIC_MODEL, LLM_ANALYZE_TOP_N)
-# İstekte analyze:true gönder → sıralamanın en üstündeki N ürün analiz edilir (maliyet kontrolü)
+# add to .env:  ANTHROPIC_API_KEY=sk-ant-...   (optional: ANTHROPIC_MODEL, LLM_ANALYZE_TOP_N)
+# send analyze:true → only the top-N ranked products are analysed (cost control)
 curl -X POST localhost:4545/api/search -H 'Content-Type: application/json' \
   -d '{"source":"demo","keyword":"blender","analyze":true}'
 ```
 
-Model serbest metin değil, **tanımlı bir JSON şemasına** (`record_ad_insight`) uyan yapılandırılmış
-çıktı döndürür (`tool_choice` ile o tool'a zorlanır). Anahtar yoksa özellik sessizce kapanır,
-arama yine çalışır (best-effort). Arayüzde **🧠 AI analiz** kutusuyla açılır.
+The model returns **structured output** matching a defined JSON schema (`record_ad_insight`), forced with `tool_choice` — not free text. If no key is set, the feature is silently disabled and search still works (best-effort). Toggle it in the UI with **🧠 AI analiz**.
+
+### With a database (optional — Postgres / Supabase)
+
+```bash
+# add a connection string to .env:
+# DATABASE_URL=postgresql://...   (Supabase: Project Settings → Database → Connection string)
+npm install            # installs the pg driver
+npm run db:schema      # applies db/schema.sql
+npm start              # every search is now persisted; GET /api/searches for history
+```
+
+### Docker (app + Postgres)
+
+```bash
+docker compose up --build
+#   App: http://localhost:4545   |   Postgres: localhost:5432 (schema auto-loaded)
+```
+
+---
+
+## Features
+
+- 🔍 Keyword / category / minimum-active-days filters
+- 🏆 **100-point weighted winning score** (config-driven) with a per-signal breakdown
+- 🧠 **Optional AI analysis**: niche/hook/angle extraction from ad copy via Claude **tool/function-calling**
+- ▦ Card and ▤ table views, ⬇ CSV export (Excel-friendly, UTF-8)
+- 📡 Two data sources: **Demo** (offline) and **Live** (Apify → Meta Ad Library)
+- 🗄️ Optional persistence: Postgres/Supabase; automatic **in-memory** fallback otherwise
+- 🧪 Unit tests for scoring, validation, and AI analysis (`node:test`, zero dependencies)
+- 🐳 Docker + docker-compose, `/health` probe
 
 ---
 
 ## API
 
-| Metot | Yol | Açıklama |
-|------|-----|----------|
-| `POST` | `/api/search` | Arama çalıştırır. Gövde: `{ source, keyword, niche, minDays, sort, count, token }` |
-| `GET`  | `/api/searches?limit=20` | Kaydedilen son aramaların özeti |
-| `GET`  | `/health` | Sağlık kontrolü |
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/search` | Runs a search. Body: `{ source, keyword, niche, minDays, sort, count, token, analyze }` |
+| `GET`  | `/api/searches?limit=20` | Summary of recent persisted searches |
+| `GET`  | `/health` | Health check |
 
-**Örnek**
+**Example**
 
 ```bash
 curl -X POST localhost:4545/api/search \
@@ -112,7 +111,7 @@ curl -X POST localhost:4545/api/search \
   "count": 2, "avgDays": 210, "avgScore": 58, "strong": 1,
   "items": [
     {
-      "productName": "RGB LED Şerit Işık (5m)",
+      "productName": "RGB LED Strip Light (5m)",
       "winningScore": 87,
       "tier": "🔥 Çok Güçlü",
       "scoreBreakdown": { "longevity": 37, "adScale": 29, "rating": 11, "freshness": 10 }
@@ -124,64 +123,64 @@ curl -X POST localhost:4545/api/search \
 
 ---
 
-## Kazanan skoru nasıl hesaplanır?
+## How the winning score works
 
-Skor **deterministik ve açıklanabilir**; her sinyal 0..1'e normalize edilip ağırlıkla çarpılır (toplam = 100):
+The score is **deterministic and explainable**; each signal is normalised to 0..1 and multiplied by a weight (total = 100):
 
-| Sinyal | Ağırlık | Sezgi |
-|--------|:------:|------|
-| `longevity` (aktif gün) | 45 | Uzun süredir aktif reklam = kanıtlanmış talep |
-| `adScale` (reklam sayısı) | 30 | Çok reklam/varyasyon = bütçe & ölçek sinyali |
-| `rating` (ürün puanı) | 15 | Yalnızca 4.0 üzeri kısım katkı verir |
-| `freshness` (hâlâ aktif) | 10 | Canlı talep sinyali |
+| Signal | Weight | Intuition |
+|--------|:------:|-----------|
+| `longevity` (active days) | 45 | Long-running ads = proven demand |
+| `adScale` (ad count) | 30 | Many ads/variants = budget & scale signal |
+| `rating` (product rating) | 15 | Only the portion above 4.0 contributes |
+| `freshness` (still active) | 10 | Live-demand signal |
 
-Ağırlıklar `.env` üzerinden (`SCORE_W_*`) kod değişmeden ayarlanabilir.
+Weights are configurable via `.env` (`SCORE_W_*`) without touching code.
 
 ---
 
-## Proje yapısı
+## Project structure
 
 ```
 winning-product-finder/
 ├── src/
-│   ├── index.js                # Giriş noktası (HTTP sunucuyu başlatır)
-│   ├── config/                 # Merkezî config + .env yükleme + skor ağırlıkları
-│   ├── domain/                 # İş kuralları: scoring (100p motor) + product modeli
-│   ├── providers/              # Veri kaynağı adaptörleri (demo, apify) + llm/ (Anthropic client)
+│   ├── index.js                # Entry point (starts the HTTP server)
+│   ├── config/                 # Central config + .env loading + score weights
+│   ├── domain/                 # Business rules: scoring (100-pt engine) + product model
+│   ├── providers/              # Data-source adapters (demo, apify) + llm/ (Anthropic client)
 │   ├── services/               # Orchestration (searchService) + insightService (LLM tool-calling)
-│   ├── repositories/           # Kalıcılık: postgres + memory + factory (fallback)
-│   ├── validation/             # İstek doğrulama & sanitizasyon
+│   ├── repositories/           # Persistence: postgres + memory + factory (fallback)
+│   ├── validation/             # Request validation & sanitisation
 │   ├── server/                 # HTTP transport: httpServer, static, controllers
 │   └── utils/                  # logger, errors
-├── api/search.js               # Vercel serverless adaptörü (aynı servisi kullanır)
-├── db/schema.sql               # Postgres/Supabase şeması (searches + search_items)
-├── data/demo-products.json     # Offline demo ürünleri
-├── public/                     # Vanilla JS arayüz (index.html, styles.css, app.js)
-├── automation/                 # n8n workflow (agentic pipeline referansı)
-├── test/scoring.test.js        # Birim testler
+├── api/search.js               # Vercel serverless adapter (reuses the same service)
+├── db/schema.sql               # Postgres/Supabase schema (searches + search_items)
+├── data/demo-products.json     # Offline demo products
+├── public/                     # Vanilla-JS UI (index.html, styles.css, app.js)
+├── automation/                 # n8n workflow (agentic-pipeline reference)
+├── test/                       # Unit tests
 ├── Dockerfile · docker-compose.yml
 └── ARCHITECTURE.md
 ```
 
 ---
 
-## Güvenlik
+## Security
 
-- `.env`, `.mcp.json`, `*.key`, `*.pem` ve `secrets/` **git'e girmez** (`.gitignore`).
-- Apify token'ı **sunucu tarafında** (`APIFY_TOKEN`) tutmak tercih edilir; arayüz girişi yalnızca kolaylık içindir.
-- İstek gövdesi boyutu sınırlanır, girişler doğrulanır, statik sunumda path-traversal engellenir.
-- Kalıcılık hatası aramayı düşürmez (best-effort persist).
+- `.env`, `.mcp.json`, `*.key`, `*.pem` and `secrets/` are **never committed** (`.gitignore`).
+- The Apify token is kept **server-side** (`APIFY_TOKEN`); UI entry is a convenience only.
+- Request body size is capped, inputs are validated, and static serving blocks path traversal.
+- Persistence failures never break a search (best-effort persist).
 
 ---
 
-## Yol haritası
+## Roadmap
 
-- [x] LLM katmanı: reklam metinlerinden niş/hook/açı çıkarımı (tool/function-calling)
-- [ ] Semantik arama (embeddings + pgvector) — Supabase üzerinde
-- [ ] RAG: geçmiş kazanan ürünlerle analizi zenginleştirme
-- [ ] Ek kaynak sağlayıcıları (TikTok Creative Center) — mevcut provider arayüzüne takılır
-- [ ] React/Next.js arayüz
+- [x] LLM layer: niche/hook/angle extraction from ad copy (tool/function-calling)
+- [ ] Semantic search (embeddings + pgvector) on Supabase
+- [ ] RAG: enrich analysis with past winning products
+- [ ] Additional source providers (TikTok Creative Center) — plugs into the existing provider interface
+- [ ] React/Next.js UI
 
-## Lisans
+## License
 
 MIT

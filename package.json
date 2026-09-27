@@ -18,13 +18,12 @@
     "scoring",
     "nodejs"
   ],
-  "author": "Özlem Kılıç",
+  "author": "OzlemKlc",
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {},
   "optionalDependencies": {
-    "pg": "^8.12.0"
+    "pg": "^8.23.0"
   }
 }
