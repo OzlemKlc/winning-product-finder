@@ -1,0 +1,368 @@
+{
+  "name": "Automatically Search Facebook Ad Products on Amazon using Apify Scrapers",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8ea1eb6a-9814-4935-82f0-dbe7fbe1b318",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [336, 592],
+      "typeVersion": 1
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "bb8871d1-2208-406d-9210-e9b4c95d9cc3",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [2208, 528],
+      "typeVersion": 3,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/runs?token=",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"count\": 10,\n    \"scrapeAdDetails\": true,\n    \"scrapePageAds.activeStatus\": \"all\",\n    \"urls\": [\n        {\n            \"url\": \"{{ $json.url }}\",\n            \"method\": \"GET\"\n        }\n    ]\n} ",
+        "options": {}
+      },
+      "id": "3a4ad496-8165-4987-aee1-f804fb8d35fd",
+      "name": "Run FB Library Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [880, 592],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/runs/last/dataset/items?token=",
+        "options": {}
+      },
+      "id": "7d6752e1-b469-4ed2-a651-bd9be05cc80a",
+      "name": "Get Actor's Scraped Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1696, 592],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.snapshot.caption }}",
+        "options": {}
+      },
+      "id": "77462d23-50ef-4990-94ac-bce340f8ec93",
+      "name": "Scrape Website Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2496, 672],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTML to Plain Text Converter for n8n Code Node\nconst htmlContent = $input.first().json.data\n\nif (!htmlContent) {\n  return [{ json: { error: \"No HTML content found in input\" } }];\n}\n\nfunction htmlToPlainText(html) {\n  let text = html;\n  text = text.replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '');\n  text = text.replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '');\n  text = text.replace(/<\\/?(div|p|br|h[1-6]|li|tr)[^>]*>/gi, '\\n');\n  text = text.replace(/<li[^>]*>/gi, '- ');\n  text = text.replace(/<[^>]*>/g, '');\n  const entityMap = {\n    '&amp;': '&',\n    '&lt;': '<',\n    '&gt;': '>',\n    '&quot;': '\"',\n    '&#39;': \"'\",\n    '&apos;': \"'\",\n    '&nbsp;': ' '\n  };\n  for (const [entity, char] of Object.entries(entityMap)) {\n    text = text.replace(new RegExp(entity, 'g'), char);\n  }\n  text = text.replace(/&#(\\d+);/g, (match, dec) => String.fromCharCode(dec));\n  text = text.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));\n  text = text.replace(/\\n\\s*\\n/g, '\\n\\n');\n  text = text.replace(/[ \\t]+/g, ' ');\n  text = text.trim();\n  return text;\n}\n\ntry {\n  const plainText = htmlToPlainText(htmlContent);\n  return [{ json: { originalHtml: htmlContent, plainText: plainText, characterCount: plainText.length, wordCount: plainText.split(/\\s+/).filter(word => word.length > 0).length, success: true } }];\n} catch (error) {\n  return [{ json: { error: `Failed to convert HTML to text: ${error.message}`, originalHtml: htmlContent, success: false } }];\n}"
+      },
+      "id": "a9849513-c2bd-42b4-97bf-d9d56a52c463",
+      "name": "Turn Into PlainText",
+      "type": "n8n-nodes-base.code",
+      "position": [2720, 672],
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/axesso_data~amazon-search-scraper/runs?token=",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"input\": [\n        {\n            \"keyword\": \"{{ $json.message.content }}\",\n            \"domainCode\": \"com\",\n            \"sortBy\": \"recent\",\n            \"maxPages\": 1,\n            \"category\": \"aps\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "id": "589ecbf9-917f-470e-9ade-5553b453421f",
+      "name": "Run Amazon Search Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [3536, 688],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "d4bca713-ea0f-496b-935a-c7e03939c993", "name": "amazonURL", "type": "string", "value": "={{ 'https://www.amazon.com'.concat($json.dpUrl) }}" },
+            { "id": "aa404d43-dd49-4836-be25-9546b764c44e", "name": "productTitle", "type": "string", "value": "={{ $json.productDescription }}" },
+            { "id": "7e5ba88b-fd1b-44a3-999b-25fecc0dfdf1", "name": "price", "type": "number", "value": "={{ $json.price }}" },
+            { "id": "756647b3-5893-498a-9233-afc4a7e25023", "name": "productRating", "type": "number", "value": "={{ $json.productRating.slice(0,3) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "54bfb46b-4972-4cd0-a471-daf64f4f8aa2",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "position": [4496, 688],
+      "typeVersion": 3.4,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "c4e12fad-a045-4e97-a6c0-da1eecf92e27",
+      "name": "Limit",
+      "type": "n8n-nodes-base.limit",
+      "position": [4720, 688],
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "c035dbc4-96c7-41f3-abc4-865026954816", "name": "amazonURL", "type": "string", "value": "={{ $json.amazonURL }}" },
+            { "id": "4eed2bbc-41f3-4deb-8704-a121180645d3", "name": "productTitle", "type": "string", "value": "={{ $json.productTitle }}" },
+            { "id": "1dcbb87d-c334-42e6-947e-3ef53496031c", "name": "price", "type": "number", "value": "={{ $json.price }}" },
+            { "id": "00c79031-b624-4ac4-a6dc-1415bbc99b96", "name": "productRating", "type": "number", "value": "={{ $json.productRating }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ecd58583-9264-493c-8f9c-d1806efcae5a",
+      "name": "SaveItems",
+      "type": "n8n-nodes-base.set",
+      "position": [4944, 688],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "36d7a682-5612-4303-9074-e9b4af4d70ab", "name": "snapshot.page_name", "type": "string", "value": "={{ $json.snapshot.page_name }}" },
+            { "id": "33a6254a-1d92-4b7f-b93f-db437bacbfa9", "name": "snapshot.page_profile_uri", "type": "string", "value": "={{ $json.snapshot.page_profile_uri }}" },
+            { "id": "f20599df-72d4-4aa9-bbff-752989bb8308", "name": "snapshot.caption", "type": "string", "value": "={{ $json.snapshot.cards[0].link_url }}" },
+            { "id": "f4e5ed8c-3486-46b5-a52f-fd764f069dc5", "name": "snapshot.cards[0].link_url", "type": "string", "value": "={{ $json.snapshot.cards[0].link_url }}" },
+            { "id": "9cc1a88d-3a08-433f-8952-0167d7c02648", "name": "snapshot.body.text", "type": "string", "value": "={{ $json.snapshot.body.text }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8303de9c-cd7b-4b0e-9872-3288adda8e3e",
+      "name": "SaveFBData",
+      "type": "n8n-nodes-base.set",
+      "position": [1920, 592],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/axesso_data~amazon-search-scraper/runs/last/dataset/items?token=",
+        "options": {}
+      },
+      "id": "cb85f819-e250-495c-9c22-3f95339f68ec",
+      "name": "Get Amazon Search Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [4272, 688],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "mode": "list", "value": "gpt-4.1-mini", "cachedResultName": "GPT-4.1-MINI" },
+        "messages": {
+          "values": [
+            { "content": "=You are a helpful assistant. You take a Facebook ad's scraped website content, and search for a product being sold on that website. You only take one product, and find the product's name.\n\nThe purpose of this is to search that exact product on Amazon. Thus as an output, you formate that product's name as if you'd want to search it on Amazon. \n\n## Rules\n- If you don't get any content from the website, use the Facebook Ad page name, caption or body text to find the product name. If you still can't find it, say \"No Product Found\" as output.\n\n## Tools\n- Here's the website's scraped content: {{ $json.plainText }}\n- Facebook Ad Page Name: {{ $('SaveFBData').item.json.snapshot.page_name }}\n- Facebook Ad Caption: {{ $('SaveFBData').item.json.snapshot.caption }}\n- Facebook Ad Body Text: {{ $('SaveFBData').item.json.snapshot.body.text }}\n", "role": "system" },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "9b0b5ec2-f984-45c9-989c-a990a160f3b6",
+      "name": "Product Name Finder",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [2944, 672],
+      "typeVersion": 1.8,
+      "credentials": { "openAiApi": { "id": "Obgz9OUV16TITy8t", "name": "OpenAi account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            { "id": "27e73c18-2a7e-47f1-9936-151785ce8633", "operator": { "name": "filter.operator.equals", "type": "string", "operation": "equals" }, "leftValue": "={{ $json.message.content }}", "rightValue": "No Product Found" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e726b9e1-4c11-4a29-9bc6-4aa5b3aca3e9",
+      "name": "If No Product Found",
+      "type": "n8n-nodes-base.if",
+      "position": [3296, 672],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            { "id": "3e78fef9-a7e1-42d1-abdb-bd3215d535b4", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }, "leftValue": "={{ $json.amazonURL }}", "rightValue": "" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1634ef7c-f911-468c-ad22-a07c6dba6309",
+      "name": "If Amazon URL Found",
+      "type": "n8n-nodes-base.if",
+      "position": [2576, 256],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "abd83d11-9e86-47fb-b2e4-13590b5bab00", "name": "url", "value": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&is_targeted_country=false&media_type=all&q=portable%20blender&search_type=keyword_unordered&source=fb-logo", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [656, 592],
+      "id": "b938cdd7-f709-47af-af6d-aeafc1ecadfb",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1vfoHP6gOMiADY9873JVlOWQws6D6WV8K7PfFmDvGejo", "mode": "list", "cachedResultName": "urun", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfoHP6gOMiADY9873JVlOWQws6D6WV8K7PfFmDvGejo/edit?usp=drivesdk" },
+        "sheetName": { "__rl": true, "value": "gid=0", "mode": "list", "cachedResultName": "Sayfa1", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfoHP6gOMiADY9873JVlOWQws6D6WV8K7PfFmDvGejo/edit#gid=0" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Price": "={{ $json.price }}",
+            "Link URL": "={{ $('SaveFBData').item.json.snapshot.cards[0].link_url }}",
+            "AmazonURL": "={{ $json.amazonURL }}",
+            "FB Page Name": "={{ $('SaveFBData').item.json.snapshot.page_name }}",
+            "ProductTitle": "={{ $('Product Name Finder').item.json.message.content }}"
+          },
+          "matchingColumns": ["row_number"],
+          "schema": [
+            { "id": "FB Page Name", "displayName": "FB Page Name", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Link URL", "displayName": "Link URL", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "ProductTitle", "displayName": "ProductTitle", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "AmazonURL", "displayName": "AmazonURL", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Price", "displayName": "Price", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "83cd7688-5aec-4760-82c2-afdaa89b23e8",
+      "name": "Append row in sheet1",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [2912, 224],
+      "typeVersion": 4.6,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "LA76pZ5qa3h7nGcI", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/runs/last?token=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1168, 592],
+      "id": "dfe0e372-5c33-4a2c-92ca-96c2639b6cac",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "3cba47e6-6136-46ec-9986-40ff9a102967", "leftValue": "={{ $json.data.status }}", "rightValue": "SUCCEEDED", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1392, 592],
+      "id": "f9f1f653-651d-47ab-924e-10f0d46b7ce2",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1552, 752],
+      "id": "cace0726-09e6-4713-91ee-2d14bb6d7ca7",
+      "name": "Wait",
+      "webhookId": "895890e2-f321-4763-8179-cfd4036faf52"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/axesso_data~amazon-search-scraper/runs/last?token=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3776, 688],
+      "id": "db7f8ac7-1fed-4ecf-9214-19678bfd0444",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "3cba47e6-6136-46ec-9986-40ff9a102967", "leftValue": "={{ $json.data.status }}", "rightValue": "SUCCEEDED", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [4016, 688],
+      "id": "ddf7e32c-30e6-43cc-9c80-6f73570cde4e",
+      "name": "If1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4160, 864],
+      "id": "acf9f0cf-8c1b-42f7-88c4-084945f73822",
+      "name": "Wait1",
+      "webhookId": "895890e2-f321-4763-8179-cfd4036faf53"
+    }
+  ],
+  "connections": {
+    "Limit": { "main": [[{ "node": "SaveItems", "type": "main", "index": 0 }]] },
+    "SaveItems": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
+    "SaveFBData": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
+    "Edit Fields1": { "main": [[{ "node": "Limit", "type": "main", "index": 0 }]] },
+    "Manual Trigger": { "main": [[{ "node": "Edit Fields", "type": "main", "index": 0 }]] },
+    "Loop Over Items": { "main": [[{ "node": "If Amazon URL Found", "type": "main", "index": 0 }], [{ "node": "Scrape Website Content", "type": "main", "index": 0 }]] },
+    "If Amazon URL Found": { "main": [[{ "node": "Append row in sheet1", "type": "main", "index": 0 }]] },
+    "If No Product Found": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }], [{ "node": "Run Amazon Search Actor", "type": "main", "index": 0 }]] },
+    "Product Name Finder": { "main": [[{ "node": "If No Product Found", "type": "main", "index": 0 }]] },
+    "Turn Into PlainText": { "main": [[{ "node": "Product Name Finder", "type": "main", "index": 0 }]] },
+    "Run FB Library Actor": { "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]] },
+    "Scrape Website Content": { "main": [[{ "node": "Turn Into PlainText", "type": "main", "index": 0 }]] },
+    "Run Amazon Search Actor": { "main": [[{ "node": "HTTP Request1", "type": "main", "index": 0 }]] },
+    "Get Amazon Search Results": { "main": [[{ "node": "Edit Fields1", "type": "main", "index": 0 }]] },
+    "Get Actor's Scraped Content": { "main": [[{ "node": "SaveFBData", "type": "main", "index": 0 }]] },
+    "Edit Fields": { "main": [[{ "node": "Run FB Library Actor", "type": "main", "index": 0 }]] },
+    "HTTP Request": { "main": [[{ "node": "If", "type": "main", "index": 0 }]] },
+    "If": { "main": [[{ "node": "Get Actor's Scraped Content", "type": "main", "index": 0 }], [{ "node": "Wait", "type": "main", "index": 0 }]] },
+    "Wait": { "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]] },
+    "HTTP Request1": { "main": [[{ "node": "If1", "type": "main", "index": 0 }]] },
+    "If1": { "main": [[{ "node": "Get Amazon Search Results", "type": "main", "index": 0 }], [{ "node": "Wait1", "type": "main", "index": 0 }]] },
+    "Wait1": { "main": [[{ "node": "HTTP Request1", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
