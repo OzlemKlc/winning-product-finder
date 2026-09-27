@@ -68,11 +68,25 @@ docker compose up --build
 
 - 🔍 Anahtar kelime / kategori / minimum aktif gün filtreleri
 - 🏆 **100 puanlık ağırlıklı kazanan skoru** (config-driven) + skor kırılımı
+- 🧠 **AI analiz (opsiyonel)**: Claude ile reklam metninden niş/hook/açı çıkarımı (**tool/function-calling**)
 - ▦ Kart ve ▤ Tablo görünümü, ⬇ CSV dışa aktarma (Excel uyumlu, UTF-8)
 - 📡 İki veri kaynağı: **Demo** (offline) ve **Canlı** (Apify → Meta Ad Library)
 - 🗄️ Opsiyonel kalıcılık: Postgres/Supabase; yoksa otomatik **in-memory** fallback
-- 🧪 Skorlama motoru için birim testler (`node:test`, sıfır bağımlılık)
+- 🧪 Skorlama + doğrulama + AI analiz için birim testler (`node:test`, sıfır bağımlılık)
 - 🐳 Docker + docker-compose, `/health` probe'u
+
+### AI analiz (Claude tool-calling)
+
+```bash
+# .env içine ekle:  ANTHROPIC_API_KEY=sk-ant-...   (opsiyonel: ANTHROPIC_MODEL, LLM_ANALYZE_TOP_N)
+# İstekte analyze:true gönder → sıralamanın en üstündeki N ürün analiz edilir (maliyet kontrolü)
+curl -X POST localhost:4545/api/search -H 'Content-Type: application/json' \
+  -d '{"source":"demo","keyword":"blender","analyze":true}'
+```
+
+Model serbest metin değil, **tanımlı bir JSON şemasına** (`record_ad_insight`) uyan yapılandırılmış
+çıktı döndürür (`tool_choice` ile o tool'a zorlanır). Anahtar yoksa özellik sessizce kapanır,
+arama yine çalışır (best-effort). Arayüzde **🧠 AI analiz** kutusuyla açılır.
 
 ---
 
@@ -133,8 +147,8 @@ winning-product-finder/
 │   ├── index.js                # Giriş noktası (HTTP sunucuyu başlatır)
 │   ├── config/                 # Merkezî config + .env yükleme + skor ağırlıkları
 │   ├── domain/                 # İş kuralları: scoring (100p motor) + product modeli
-│   ├── providers/              # Veri kaynağı adaptörleri (demo, apify) — strategy
-│   ├── services/               # Orchestration: Validate→Collect→Score→Persist→Output
+│   ├── providers/              # Veri kaynağı adaptörleri (demo, apify) + llm/ (Anthropic client)
+│   ├── services/               # Orchestration (searchService) + insightService (LLM tool-calling)
 │   ├── repositories/           # Kalıcılık: postgres + memory + factory (fallback)
 │   ├── validation/             # İstek doğrulama & sanitizasyon
 │   ├── server/                 # HTTP transport: httpServer, static, controllers
@@ -162,9 +176,10 @@ winning-product-finder/
 
 ## Yol haritası
 
-- [ ] Ek kaynak sağlayıcıları (TikTok Creative Center) — mevcut provider arayüzüne takılır
-- [ ] LLM katmanı: reklam metinlerinden niş/hook çıkarımı (yalnızca yorum gerektiren adımda)
+- [x] LLM katmanı: reklam metinlerinden niş/hook/açı çıkarımı (tool/function-calling)
 - [ ] Semantik arama (embeddings + pgvector) — Supabase üzerinde
+- [ ] RAG: geçmiş kazanan ürünlerle analizi zenginleştirme
+- [ ] Ek kaynak sağlayıcıları (TikTok Creative Center) — mevcut provider arayüzüne takılır
 - [ ] React/Next.js arayüz
 
 ## Lisans

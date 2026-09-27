@@ -24,8 +24,8 @@ bağımsız, test edilebilir ve genişletilebilir bir sistem.
 |--------|--------|------------|
 | Config | `src/config` | `.env` yükleme, tipli/doğrulanmış ayarlar, skor ağırlıkları |
 | Domain | `src/domain` | Saf iş kuralları: `scoring` (100p motor), `product` modeli |
-| Providers | `src/providers` | Kaynak adaptörleri (`demo`, `apify`) — ortak `fetch()` arayüzü |
-| Services | `src/services` | Orchestration boru hattı (pipeline) |
+| Providers | `src/providers` | Kaynak adaptörleri (`demo`, `apify`) + `llm/` Anthropic istemcisi |
+| Services | `src/services` | `searchService` (orchestration) + `insightService` (LLM tool-calling) |
 | Repositories | `src/repositories` | Kalıcılık: `postgres` + `memory` + `factory` |
 | Validation | `src/validation` | İstek doğrulama & sanitizasyon |
 | Server | `src/server` | HTTP transport: sunucu, router, controller, statik |
@@ -48,6 +48,7 @@ flowchart TD
     subgraph App["Uygulama katmanı"]
       VAL["validation/searchQuery.js"]
       SVC["services/searchService.js"]
+      INS["services/insightService.js — LLM tool-calling"]
     end
 
     subgraph Domain["Domain (saf)"]
@@ -59,6 +60,10 @@ flowchart TD
       REG["providers/index.js (registry)"]
       DEMO["demoProvider"]
       APIFY["apifyProvider → Meta Ad Library"]
+    end
+
+    subgraph LLM["AI analiz (opsiyonel)"]
+      ANTH["providers/llm/anthropicClient → Claude Messages API"]
     end
 
     subgraph Persistence["Repositories (factory)"]
@@ -73,6 +78,7 @@ flowchart TD
     SVC --> VAL
     SVC --> REG --> DEMO & APIFY
     SVC --> PROD --> SCORE
+    SVC --> INS --> ANTH
     SVC --> REPO --> PG & MEM
 ```
 
@@ -96,7 +102,12 @@ sequenceDiagram
     P-->>S: ham ürünler
     S->>D: enrich + score (0..100)
     D-->>S: skorlu ürünler + kırılım
-    S->>S: sort + summarize
+    S->>S: sort
+    opt analyze=true ve ANTHROPIC_API_KEY var
+      S->>S: insightService.enrichWithInsights(top N)
+      Note right of S: Claude tool-calling → niş/hook/açı (best-effort)
+    end
+    S->>S: summarize
     S->>R: saveSearch(...)  (best-effort)
     R-->>S: searchId
     S-->>C: { source, count, avg*, items, searchId }
@@ -136,11 +147,15 @@ için aynı `pg` sürücüsü ve `DATABASE_URL` ile çalışır; ek istemci gere
 ## Neden LLM çekirdekte değil?
 
 Skorlama sayısal ve deterministik olarak çözülebilir; bu yüzden `domain/scoring.js`
-saf bir fonksiyondur (test edilebilir, tekrar-üretilebilir, ücretsiz). LLM, ancak
-gerçekten **anlamsal yorum** gereken adımlarda (reklam metninden niş/hook çıkarımı —
-bkz. yol haritası) devreye girmelidir. Bu ayrım maliyeti düşürür ve sonuçları
-açıklanabilir kılar. `automation/n8n-facebook-ads-workflow.json`, bu boru hattının
-no-code/agentic bir varyantını (Apify → normalize → analiz) referans olarak içerir.
+saf bir fonksiyondur (test edilebilir, tekrar-üretilebilir, ücretsiz). LLM ise yalnızca
+gerçekten **anlamsal yorum** gereken adımda devreye girer: `insightService`, reklam
+metninden niş/hook/açı çıkarımını **tool/function-calling** ile yapar — modelden serbest
+metin değil, `record_ad_insight` şemasına uyan yapılandırılmış çıktı istenir (`tool_choice`
+ile zorlanır). Bu adım opsiyonel (`analyze=true`), best-effort ve maliyet için yalnızca
+sıralamanın en üstündeki N ürünle sınırlıdır; anahtar yoksa sessizce kapanır. Bu ayrım
+maliyeti düşürür ve deterministik çekirdeği açıklanabilir tutar.
+`automation/n8n-facebook-ads-workflow.json`, bu boru hattının no-code/agentic bir
+varyantını (Apify → normalize → analiz) referans olarak içerir.
 
 ## Güvenlik notları
 
