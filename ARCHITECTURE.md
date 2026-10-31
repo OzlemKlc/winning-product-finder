@@ -24,7 +24,7 @@ bağımsız, test edilebilir ve genişletilebilir bir sistem.
 |--------|--------|------------|
 | Config | `src/config` | `.env` yükleme, tipli/doğrulanmış ayarlar, skor ağırlıkları |
 | Domain | `src/domain` | Saf iş kuralları: `scoring` (100p motor), `product` modeli |
-| Providers | `src/providers` | Kaynak adaptörleri (`demo`, `apify`) + `llm/` Anthropic istemcisi |
+| Providers | `src/providers` | Kaynak adaptörleri (`demo`, `apify`) + `llm/` OpenAI istemcisi |
 | Services | `src/services` | `searchService` (orchestration) + `insightService` (LLM tool-calling) |
 | Repositories | `src/repositories` | Kalıcılık: `postgres` + `memory` + `factory` |
 | Validation | `src/validation` | İstek doğrulama & sanitizasyon |
@@ -63,7 +63,7 @@ flowchart TD
     end
 
     subgraph LLM["AI analiz (opsiyonel)"]
-      ANTH["providers/llm/anthropicClient → Claude Messages API"]
+      OPENAI["providers/llm/openaiClient → OpenAI Responses API"]
     end
 
     subgraph Persistence["Repositories (factory)"]
@@ -78,7 +78,7 @@ flowchart TD
     SVC --> VAL
     SVC --> REG --> DEMO & APIFY
     SVC --> PROD --> SCORE
-    SVC --> INS --> ANTH
+    SVC --> INS --> OPENAI
     SVC --> REPO --> PG & MEM
 ```
 
@@ -103,9 +103,9 @@ sequenceDiagram
     S->>D: enrich + score (0..100)
     D-->>S: skorlu ürünler + kırılım
     S->>S: sort
-    opt analyze=true ve ANTHROPIC_API_KEY var
+    opt analyze=true ve OPENAI_API_KEY var
       S->>S: insightService.enrichWithInsights(top N)
-      Note right of S: Claude tool-calling → niş/hook/açı (best-effort)
+      Note right of S: OpenAI function calling → niş/hook/açı (best-effort)
     end
     S->>S: summarize
     S->>R: saveSearch(...)  (best-effort)

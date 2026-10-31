@@ -4,7 +4,7 @@
 
 > A layered product-research tool that surfaces **winning products** from the Meta (Facebook/Instagram) Ad Library.
 
-It ranks products with a deterministic **100-point weighted "winning score"**, shows them as cards or a table, exports to CSV, and (optionally) persists every search to Postgres/Supabase. An optional AI layer analyses ad copy with Claude via **tool/function-calling**.
+It ranks products with a deterministic **100-point weighted "winning score"**, shows them as cards or a table, exports to CSV, and (optionally) persists every search to Postgres/Supabase. An optional AI layer analyses ad copy with OpenAI via **function calling**.
 
 <p align="center">
   <img alt="Node" src="https://img.shields.io/badge/Node-%3E%3D18-informational">
@@ -48,10 +48,10 @@ npm start
 
 Switch to the **Canlı (Apify)** tab in the UI. If the token is set on the server, you don't need to enter it in the UI (the preferred, more secure path).
 
-### AI analysis (Claude tool-calling)
+### AI analysis (OpenAI function calling)
 
 ```bash
-# add to .env:  ANTHROPIC_API_KEY=sk-ant-...   (optional: ANTHROPIC_MODEL, LLM_ANALYZE_TOP_N)
+# add to .env:  OPENAI_API_KEY=sk-...   (optional: OPENAI_MODEL, LLM_ANALYZE_TOP_N)
 # send analyze:true → only the top-N ranked products are analysed (cost control)
 curl -X POST localhost:4545/api/search -H 'Content-Type: application/json' \
   -d '{"source":"demo","keyword":"blender","analyze":true}'
@@ -82,7 +82,7 @@ docker compose up --build
 
 - 🔍 Keyword / category / minimum-active-days filters
 - 🏆 **100-point weighted winning score** (config-driven) with a per-signal breakdown
-- 🧠 **Optional AI analysis**: niche/hook/angle extraction from ad copy via Claude **tool/function-calling**
+- 🧠 **Optional AI analysis**: niche/hook/angle extraction from ad copy via OpenAI **function calling**
 - ▦ Card and ▤ table views, ⬇ CSV export (Excel-friendly, UTF-8)
 - 📡 Two data sources: **Demo** (offline) and **Live** (Apify → Meta Ad Library)
 - 🗄️ Optional persistence: Postgres/Supabase; automatic **in-memory** fallback otherwise
@@ -148,7 +148,7 @@ winning-product-finder/
 │   ├── index.js                # Entry point (starts the HTTP server)
 │   ├── config/                 # Central config + .env loading + score weights
 │   ├── domain/                 # Business rules: scoring (100-pt engine) + product model
-│   ├── providers/              # Data-source adapters (demo, apify) + llm/ (Anthropic client)
+│   ├── providers/              # Data-source adapters (demo, apify) + llm/ (OpenAI client)
 │   ├── services/               # Orchestration (searchService) + insightService (LLM tool-calling)
 │   ├── repositories/           # Persistence: postgres + memory + factory (fallback)
 │   ├── validation/             # Request validation & sanitisation

@@ -15,16 +15,17 @@
 
 const { config } = require('../config');
 const { logger } = require('../utils/logger');
-const { createMessage } = require('../providers/llm/anthropicClient');
+const { createResponse } = require('../providers/llm/openaiClient');
 
 /**
  * Tool tanımı — modelin dolduracağı yapılandırılmış çıktının şeması.
  */
 const AD_INSIGHT_TOOL = {
+  type: 'function',
   name: 'record_ad_insight',
   description:
     'Bir e-ticaret reklamının metninden pazarlama içgörülerini yapılandırılmış olarak çıkar.',
-  input_schema: {
+  parameters: {
     type: 'object',
     properties: {
       niche: { type: 'string', description: 'Ürünün nişi/kategorisi (kısa)' },
@@ -54,22 +55,17 @@ const SYSTEM =
  * @returns {Promise<object|null>} insight objesi ya da null
  */
 async function analyzeProduct(product, deps = {}) {
-  const send = deps.send || createMessage;
+  const send = deps.send || createResponse;
   const text = (product.adCopy || product.productName || '').slice(0, 1500);
   if (!text.trim()) return null;
 
   const response = await send({
-    system: SYSTEM,
-    messages: [
-      {
-        role: 'user',
-        content:
-          `Ürün: ${product.productName}\nReklam metni: ${text}\n\n` +
-          `Bu reklamı analiz et ve record_ad_insight tool'unu çağır.`,
-      },
-    ],
+    instructions: SYSTEM,
+    input:
+      `Ürün: ${product.productName}\nReklam metni: ${text}\n\n` +
+      `Bu reklamı analiz et ve record_ad_insight fonksiyonunu çağır.`,
     tools: [AD_INSIGHT_TOOL],
-    tool_choice: { type: 'tool', name: AD_INSIGHT_TOOL.name },
+    tool_choice: { type: 'function', name: AD_INSIGHT_TOOL.name },
     maxTokens: 512,
   });
 
@@ -77,14 +73,19 @@ async function analyzeProduct(product, deps = {}) {
 }
 
 /**
- * Anthropic yanıtından tool_use girdisini (yapılandırılmış içgörü) çıkarır.
+ * OpenAI Responses yanıtından function_call argümanlarını çıkarır.
  * @param {object} response
  * @returns {object|null}
  */
 function parseInsight(response) {
-  const blocks = (response && response.content) || [];
-  const toolUse = blocks.find((b) => b.type === 'tool_use' && b.name === AD_INSIGHT_TOOL.name);
-  return toolUse ? toolUse.input : null;
+  const output = (response && response.output) || [];
+  const call = output.find((item) => item.type === 'function_call' && item.name === AD_INSIGHT_TOOL.name);
+  if (!call) return null;
+  try {
+    return typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments;
+  } catch {
+    return null;
+  }
 }
 
 /**

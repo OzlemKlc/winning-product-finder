@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Insight service testleri — Anthropic çağrısı mock'lanır (ağ yok, anahtar gerekmez).
+ * Insight service testleri — OpenAI çağrısı mock'lanır (ağ yok, anahtar gerekmez).
  */
 
 const test = require('node:test');
@@ -10,14 +10,14 @@ const assert = require('node:assert/strict');
 const { analyzeProduct, parseInsight, enrichWithInsights, AD_INSIGHT_TOOL } = require('../src/services/insightService');
 const { config } = require('../src/config');
 
-// Sahte bir Anthropic tool_use yanıtı üretir
+// Sahte bir OpenAI function_call yanıtı üretir
 function fakeToolResponse(input) {
-  return { content: [{ type: 'tool_use', name: AD_INSIGHT_TOOL.name, input }] };
+  return { output: [{ type: 'function_call', name: AD_INSIGHT_TOOL.name, arguments: JSON.stringify(input) }] };
 }
 
 test('tool şeması zorunlu alanları içerir', () => {
   assert.equal(AD_INSIGHT_TOOL.name, 'record_ad_insight');
-  assert.deepEqual(AD_INSIGHT_TOOL.input_schema.required, ['niche', 'hook', 'angle', 'confidence']);
+  assert.deepEqual(AD_INSIGHT_TOOL.parameters.required, ['niche', 'hook', 'angle', 'confidence']);
 });
 
 test('parseInsight tool_use girdisini çıkarır', () => {
@@ -26,7 +26,7 @@ test('parseInsight tool_use girdisini çıkarır', () => {
 });
 
 test('parseInsight tool yoksa null döner', () => {
-  assert.equal(parseInsight({ content: [{ type: 'text', text: 'merhaba' }] }), null);
+  assert.equal(parseInsight({ output: [{ type: 'message', content: [] }] }), null);
   assert.equal(parseInsight({}), null);
 });
 
