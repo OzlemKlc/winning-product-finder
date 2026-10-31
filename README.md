@@ -2,6 +2,9 @@
 
 > Actively developed and maintained with [OpenAI Codex](https://openai.com/codex/).
 
+[![CI](https://github.com/OzlemKlc/winning-product-finder/actions/workflows/ci.yml/badge.svg?branch=codex%2Fhook-radar-ugc-brief)](https://github.com/OzlemKlc/winning-product-finder/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 > A layered product-research tool that surfaces **winning products** from the Meta (Facebook/Instagram) Ad Library.
 
 It ranks products with a deterministic **100-point weighted "winning score"**, shows them as cards or a table, exports to CSV, and (optionally) persists every search to Postgres/Supabase. An optional AI layer analyses ad copy with OpenAI via **function calling**.
@@ -57,7 +60,7 @@ curl -X POST localhost:4545/api/search -H 'Content-Type: application/json' \
   -d '{"source":"demo","keyword":"blender","analyze":true}'
 ```
 
-The model returns **structured output** matching a defined JSON schema (`record_ad_insight`), forced with `tool_choice` — not free text. If no key is set, the feature is silently disabled and search still works (best-effort). Toggle it in the UI with **🧠 AI analiz**.
+The model returns **structured output** matching a defined JSON schema (`record_ad_insight`), forced with `tool_choice` — not free text. If no key is set, the feature is silently disabled and search still works (best-effort). Toggle it in the UI with **🧠 AI analysis**.
 
 ### With a database (optional — Postgres / Supabase)
 
@@ -121,7 +124,7 @@ curl -X POST localhost:4545/api/search \
       "tier": "🔥 Very Strong",
       "scoreBreakdown": { "longevity": 37, "adScale": 29, "rating": 11, "freshness": 10 },
       "hooks": { "opener": "Transform your room with 16 million colors!", "patterns": ["transformation", "number", "audience", "exclamation"] },
-      "ugcBrief": { "format": "UGC · 9:16 · 15 sn", "hookOptions": ["…"], "shotList": ["…"] }
+      "ugcBrief": { "format": "UGC · 9:16 · 15 sec", "hookOptions": ["…"], "shotList": ["…"] }
     }
   ],
   "searchId": 1
@@ -205,3 +208,15 @@ winning-product-finder/
 ## License
 
 MIT
+
+## End-to-end Codex showcase
+
+Winning Product Finder is the research half of a two-project workflow:
+
+1. Search demo or live market data and rank products with explainable rules.
+2. Use Hook Radar to identify patterns associated with stronger ads.
+3. Generate a deterministic UGC brief for a top product.
+4. Pass the JSON output to AdForge for evidence-backed creative generation.
+5. Feed real campaign results into AdForge's learning loop.
+
+See [SHOWCASE.md](./SHOWCASE.md) for a reproducible five-minute demo and workshop extension.

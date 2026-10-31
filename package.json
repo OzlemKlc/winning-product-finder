@@ -2,7 +2,7 @@
   "name": "winning-product-finder",
   "version": "2.0.0",
   "private": true,
-  "description": "Meta Reklam Kütüphanesi'nden kazanan ürünleri bulan, katmanlı mimariye sahip AI-native ürün araştırma sistemi",
+  "description": "Explainable ecommerce product research with deterministic scoring, Hook Radar, UGC briefs, and optional OpenAI insights.",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -20,6 +20,14 @@
   ],
   "author": "OzlemKlc",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OzlemKlc/winning-product-finder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OzlemKlc/winning-product-finder/issues"
+  },
+  "homepage": "https://github.com/OzlemKlc/winning-product-finder#readme",
   "engines": {
     "node": ">=18"
   },

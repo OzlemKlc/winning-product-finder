@@ -64,7 +64,7 @@ function cardHTML(p, i) {
     <div class="thumb">
       ${thumb(p)}
       <span class="score-badge ${scoreClass(p.winningScore)}">${p.tier} · ${p.winningScore}</span>
-      <span class="creative-tag">${p.creativeType === 'video' ? '🎬 Video' : '🖼️ Görsel'}</span>
+      <span class="creative-tag">${p.creativeType === 'video' ? '🎬 Video' : '🖼️ Image'}</span>
     </div>
     <div class="body">
       <h3>${esc(p.productName)}</h3>
@@ -76,18 +76,18 @@ function cardHTML(p, i) {
       ${hookChips(p)}
       ${p.insight ? `<div class="insight">🧠 <b>${esc(p.insight.hook || '')}</b>${p.insight.angle ? ` <span class="chip angle">${esc(p.insight.angle)}</span>` : ''}${p.insight.audience ? `<span class="aud">👥 ${esc(p.insight.audience)}</span>` : ''}</div>` : ''}
       <div class="metrics">
-        <div class="metric"><div class="v days">${p.daysActive}g</div><div class="k">Aktif süre</div></div>
-        <div class="metric"><div class="v">${p.adCount}</div><div class="k">Reklam</div></div>
-        <div class="metric"><div class="v">${p.estPrice != null ? fmtPrice(p.estPrice, p.currency) : '—'}</div><div class="k">Fiyat</div></div>
+        <div class="metric"><div class="v days">${p.daysActive}d</div><div class="k">Active</div></div>
+        <div class="metric"><div class="v">${p.adCount}</div><div class="k">Ads</div></div>
+        <div class="metric"><div class="v">${p.estPrice != null ? fmtPrice(p.estPrice, p.currency) : '—'}</div><div class="k">Price</div></div>
       </div>
       <div class="price-row">
         ${stars(p.rating)}
         ${p.amazonPrice != null ? `<span class="muted" style="font-size:12px">Amazon: <b style="color:#ffd479">${fmtPrice(p.amazonPrice, p.currency)}</b></span>` : ''}
       </div>
       <div class="actions">
-        <a href="${adLink(p)}" target="_blank" rel="noopener">📚 Meta Reklamları</a>
+        <a href="${adLink(p)}" target="_blank" rel="noopener">📚 Meta Ads</a>
         ${p.amazonUrl ? `<a class="amazon" href="${p.amazonUrl}" target="_blank" rel="noopener">🛒 Amazon</a>` : ''}
-        ${p.ugcBrief ? `<button type="button" class="brief-btn" data-brief="${i}">🎬 UGC Brif</button>` : ''}
+        ${p.ugcBrief ? `<button type="button" class="brief-btn" data-brief="${i}">🎬 UGC Brief</button>` : ''}
       </div>
     </div>
   </article>`;
@@ -95,15 +95,15 @@ function cardHTML(p, i) {
 
 // --- Hook Radar + UGC brief ---
 const HOOK_LABEL = {
-  question: 'Soru', pain: 'Acı nokta', transformation: 'Dönüşüm', number: 'Sayı',
-  convenience: 'Kolaylık', audience: 'Hedef kitle', socialProof: 'Sosyal kanıt',
-  urgency: 'Aciliyet', exclamation: 'Ünlem'
+  question: 'Question', pain: 'Pain point', transformation: 'Transformation', number: 'Number',
+  convenience: 'Convenience', audience: 'Audience', socialProof: 'Social proof',
+  urgency: 'Urgency', exclamation: 'Exclamation'
 };
 
 function hookChips(p) {
   const pats = (p.hooks && p.hooks.patterns) || [];
   if (!pats.length) return '';
-  return `<div class="hook-chips" title="Hook Radar: reklam metnindeki kanca kalıpları">🪝 ${pats
+  return `<div class="hook-chips" title="Hook Radar: patterns detected in ad copy">🪝 ${pats
     .map(id => `<span class="chip hook">${esc(HOOK_LABEL[id] || id)}</span>`).join('')}</div>`;
 }
 
@@ -114,23 +114,23 @@ function renderHookRadar(radar) {
   const max = Math.max(...radar.map(r => r.avgScore), 1);
   el.style.display = 'block';
   el.innerHTML = `
-    <div class="radar-head"><b>🪝 Hook Radar</b><span class="muted">Kazanan reklamlarda hangi kanca kalıpları öne çıkıyor? (ort. kazanan skoruna göre)</span></div>
+    <div class="radar-head"><b>🪝 Hook Radar</b><span class="muted">Which hook patterns stand out in stronger ads? Ranked by average winning score.</span></div>
     <div class="radar-rows">${radar.map(r => `
-      <div class="radar-row${r.lowSample ? ' low' : ''}" ${r.lowSample ? 'title="Tek üründe görüldü — karar vermek için yetersiz örnek"' : ''}>
+      <div class="radar-row${r.lowSample ? ' low' : ''}" ${r.lowSample ? 'title="Observed in one product — insufficient sample"' : ''}>
         <span class="radar-label">${esc(r.label)}</span>
         <span class="radar-bar"><span style="width:${Math.round((r.avgScore / max) * 100)}%"></span></span>
-        <span class="radar-val"><b>${r.avgScore}</b> skor · ${r.count} ürün (%${r.share})${r.lowSample ? ' · az örnek' : ''}</span>
+        <span class="radar-val"><b>${r.avgScore}</b> score · ${r.count} products (${r.share}%)${r.lowSample ? ' · low sample' : ''}</span>
       </div>`).join('')}
     </div>`;
 }
 
 function briefText(b) {
   return [
-    `UGC BRİF — ${b.product} (${b.format})`,
-    `Kanıtlanmış açılar: ${b.provenAngles.join(', ') || '—'}`,
-    '', 'Hook seçenekleri:', ...b.hookOptions.map((h, i) => `${i + 1}. ${h.text}`),
-    '', 'Çekim planı:', ...b.shotList.map(s => `[${s.t}] ${s.shot} → "${s.say}"`),
-    '', `Sinyaller: skor ${b.signals.winningScore}, ${b.signals.daysActive} gün aktif, ${b.signals.adCount} reklam`
+    `UGC BRIEF — ${b.product} (${b.format})`,
+    `Proven angles: ${b.provenAngles.join(', ') || '—'}`,
+    '', 'Hook options:', ...b.hookOptions.map((h, i) => `${i + 1}. ${h.text}`),
+    '', 'Shot plan:', ...b.shotList.map(s => `[${s.t}] ${s.shot} → "${s.say}"`),
+    '', `Signals: score ${b.signals.winningScore}, ${b.signals.daysActive} active days, ${b.signals.adCount} ads`
   ].join('\n');
 }
 
@@ -141,13 +141,13 @@ function openBrief(i) {
   const dlg = $('#briefDialog');
   $('#briefBody').innerHTML = `
     <h3>🎬 ${esc(b.product)} <span class="muted">· ${esc(b.format)}</span></h3>
-    <div class="brief-angles"><span class="muted">Kanıtlanmış açılar:</span> ${b.provenAngles.map(a => `<span class="chip hook">${esc(a)}</span>`).join('') || '—'}</div>
-    <h4>Hook seçenekleri</h4>
+    <div class="brief-angles"><span class="muted">Proven angles:</span> ${b.provenAngles.map(a => `<span class="chip hook">${esc(a)}</span>`).join('') || '—'}</div>
+    <h4>Hook options</h4>
     <ol>${b.hookOptions.map(h => `<li>${esc(h.text)}</li>`).join('')}</ol>
-    <h4>Çekim planı</h4>
+    <h4>Shot plan</h4>
     <table class="brief-table"><tbody>${b.shotList.map(s => `<tr><td><b>${esc(s.t)}</b></td><td>${esc(s.shot)}</td><td>“${esc(s.say)}”</td></tr>`).join('')}</tbody></table>`;
   $('#briefCopy').onclick = () => {
-    navigator.clipboard.writeText(briefText(b)).then(() => { $('#briefCopy').textContent = '✓ Kopyalandı'; setTimeout(() => { $('#briefCopy').textContent = '📋 Kopyala'; }, 1500); });
+    navigator.clipboard.writeText(briefText(b)).then(() => { $('#briefCopy').textContent = '✓ Copied'; setTimeout(() => { $('#briefCopy').textContent = '📋 Copy'; }, 1500); });
   };
   if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
 }
@@ -163,7 +163,7 @@ function rowHTML(p, i) {
     <td><div class="prodcell"><span class="prod-emoji" style="background:${NICHE_GRADIENT[p.niche] || '#232c45'}">${emojiFor(p)}</span><span>${esc(p.productName)}</span></div></td>
     <td><span class="chip niche">${esc(p.niche)}</span></td>
     <td>${esc(p.advertiser)}</td>
-    <td><b style="color:#2dd4a7">${p.daysActive}g</b></td>
+    <td><b style="color:#2dd4a7">${p.daysActive}d</b></td>
     <td>${p.adCount}</td>
     <td>${p.estPrice != null ? fmtPrice(p.estPrice, p.currency) : '—'}</td>
     <td>${p.rating != null ? p.rating.toFixed(1) + ' ★' : '—'}</td>
@@ -180,16 +180,16 @@ function render(data) {
   const niches = [...new Set(state.items.map(p => p.niche))];
   const sel = $('#niche'); const cur = sel.value;
   if (state.source === 'demo') {
-    sel.innerHTML = '<option value="all">Tümü</option>' + niches.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sel.innerHTML = '<option value="all">All</option>' + niches.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
     sel.value = cur && niches.includes(cur) ? cur : 'all';
   }
 
   // stats
   $('#stats').innerHTML = `
-    <div class="stat"><div class="num grad">${data.count}</div><div class="lbl">Bulunan ürün</div></div>
-    <div class="stat"><div class="num">${data.avgDays}g</div><div class="lbl">Ort. aktif süre</div></div>
-    <div class="stat"><div class="num">${data.avgScore}</div><div class="lbl">Ort. kazanan skoru</div></div>
-    <div class="stat"><div class="num">${state.items.filter(p => p.winningScore >= 80).length}</div><div class="lbl">🔥 Çok güçlü ürün</div></div>`;
+    <div class="stat"><div class="num grad">${data.count}</div><div class="lbl">Products found</div></div>
+    <div class="stat"><div class="num">${data.avgDays}d</div><div class="lbl">Avg. active days</div></div>
+    <div class="stat"><div class="num">${data.avgScore}</div><div class="lbl">Avg. winning score</div></div>
+    <div class="stat"><div class="num">${state.items.filter(p => p.winningScore >= 80).length}</div><div class="lbl">🔥 Very strong</div></div>`;
 
   renderHookRadar(data.hookRadar);
 
@@ -221,7 +221,7 @@ async function search() {
   try {
     const res = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Hata');
+    if (!res.ok) throw new Error(data.error || 'Error');
     // Sunucu zaten `sort` anahtarına göre sıralı döndürür; burada yeniden sıralamak
     // kart index'leri ile UGC brif butonlarının eşleşmesini bozmaz (stabil sıralama).
     const key = body.sort;
@@ -230,16 +230,16 @@ async function search() {
   } catch (e) {
     $('#stats').innerHTML = '';
     $('#empty').style.display = 'block';
-    $('#empty').innerHTML = `<p>⚠️ ${esc(e.message)}</p><p class="muted">Canlı mod başarısızsa Demo moduna geçip tekrar dene.</p>`;
+    $('#empty').innerHTML = `<p>⚠️ ${esc(e.message)}</p><p class="muted">If live mode fails, switch to demo mode and try again.</p>`;
   } finally {
     $('#loading').style.display = 'none';
   }
 }
 
 function exportCSV() {
-  if (!state.items.length) return alert('Önce arama yap.');
+  if (!state.items.length) return alert('Run a search first.');
   const cols = ['productName', 'niche', 'advertiser', 'daysActive', 'adCount', 'estPrice', 'currency', 'rating', 'winningScore', 'tier', 'hookPatterns', 'landingUrl', 'amazonUrl'];
-  const head = ['Ürün', 'Kategori', 'Advertiser', 'AktifGün', 'ReklamSayısı', 'Fiyat', 'ParaBirimi', 'Puan', 'KazananSkoru', 'Seviye', 'HookKalıpları', 'ReklamLink', 'AmazonLink'];
+  const head = ['Product', 'Category', 'Advertiser', 'ActiveDays', 'AdCount', 'Price', 'Currency', 'Rating', 'WinningScore', 'Tier', 'HookPatterns', 'AdLink', 'AmazonLink'];
   const esc2 = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const val = (p, c) => c === 'hookPatterns' ? ((p.hooks && p.hooks.patterns) || []).map(id => HOOK_LABEL[id] || id).join(' | ') : p[c];
   const rows = state.items.map(p => cols.map(c => esc2(val(p, c))).join(','));
@@ -264,7 +264,7 @@ document.querySelectorAll('.seg-btn[data-source]').forEach(b => b.addEventListen
   const live = state.source === 'live';
   $('#tokenField').style.display = live ? 'flex' : 'none';
   $('#modePill').classList.toggle('live', live);
-  $('#modeLabel').textContent = live ? 'Canlı mod (Apify)' : 'Demo modu';
+  $('#modeLabel').textContent = live ? 'Live mode (Apify)' : 'Demo mode';
 }));
 
 document.querySelectorAll('.seg-btn[data-view]').forEach(b => b.addEventListener('click', () => {

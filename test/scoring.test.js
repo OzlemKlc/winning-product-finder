@@ -56,11 +56,11 @@ test('kırılım toplamı skora eşit', () => {
   assert.equal(sum, score);
 });
 
-test('tier eşikleri doğru', () => {
-  assert.equal(tierOf(85), '🔥 Çok Güçlü');
-  assert.equal(tierOf(65), 'Güçlü');
-  assert.equal(tierOf(45), 'Orta');
-  assert.equal(tierOf(10), 'Zayıf');
+test('tier thresholds are correct', () => {
+  assert.equal(tierOf(85), '🔥 Very Strong');
+  assert.equal(tierOf(65), 'Strong');
+  assert.equal(tierOf(45), 'Moderate');
+  assert.equal(tierOf(10), 'Weak');
 });
 
 test('doğrulama: geçersiz kaynak demo\'ya düşer, sınırlar uygulanır', () => {

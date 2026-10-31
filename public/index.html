@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,58 +17,58 @@
       <span class="logo">🏆</span>
       <div>
         <h1>Winning Product Finder</h1>
-        <p class="tagline">Meta Reklam Kütüphanesi'nden kazanan ürünleri keşfet</p>
+        <p class="tagline">Discover promising products from the Meta Ad Library</p>
       </div>
     </div>
-    <div class="mode-pill" id="modePill" title="Veri kaynağı">
-      <span class="dot"></span><span id="modeLabel">Demo modu</span>
+    <div class="mode-pill" id="modePill" title="Data source">
+      <span class="dot"></span><span id="modeLabel">Demo mode</span>
     </div>
   </header>
 
   <section class="search-panel">
     <div class="search-row">
       <div class="field grow">
-        <label>Anahtar kelime / niş</label>
-        <input id="keyword" type="text" placeholder="örn. portable blender, posture, led..." />
+        <label>Keyword / niche</label>
+        <input id="keyword" type="text" placeholder="e.g. portable blender, posture, led..." />
       </div>
       <div class="field">
-        <label>Kategori</label>
-        <select id="niche"><option value="all">Tümü</option></select>
+        <label>Category</label>
+        <select id="niche"><option value="all">All</option></select>
       </div>
       <div class="field small">
-        <label>Min. aktif gün</label>
+        <label>Min. active days</label>
         <input id="minDays" type="number" min="0" value="0" />
       </div>
       <div class="field">
-        <label>Sırala</label>
+        <label>Sort by</label>
         <select id="sort">
-          <option value="winningScore">Kazanan Skoru</option>
-          <option value="daysActive">Aktif Gün</option>
-          <option value="adCount">Reklam Sayısı</option>
-          <option value="estPrice">Fiyat</option>
+          <option value="winningScore">Winning Score</option>
+          <option value="daysActive">Active Days</option>
+          <option value="adCount">Ad Count</option>
+          <option value="estPrice">Price</option>
         </select>
       </div>
-      <button id="searchBtn" class="btn primary">🔍 Ürünleri Bul</button>
+      <button id="searchBtn" class="btn primary">🔍 Find Products</button>
     </div>
 
     <div class="search-row sub">
       <div class="seg">
-        <button class="seg-btn active" data-source="demo">Demo verisi</button>
-        <button class="seg-btn" data-source="live">Canlı (Apify)</button>
+        <button class="seg-btn active" data-source="demo">Demo data</button>
+        <button class="seg-btn" data-source="live">Live (Apify)</button>
       </div>
       <div class="field grow live-only" id="tokenField" style="display:none">
         <label>Apify API Token</label>
         <input id="apifyToken" type="password" placeholder="apify_api_..." />
       </div>
-      <label class="ai-toggle" id="aiToggle" title="Sıralamanın en üstündeki ürünler için OpenAI ile niş/hook/açı analizi">
-        <input type="checkbox" id="aiAnalyze" /> 🧠 AI analiz
+      <label class="ai-toggle" id="aiToggle" title="Use OpenAI to analyze the niche, hook, and angle for top-ranked products">
+        <input type="checkbox" id="aiAnalyze" /> 🧠 AI analysis
       </label>
       <div class="spacer"></div>
       <div class="view-toggle">
-        <button class="seg-btn active" data-view="cards">▦ Kart</button>
-        <button class="seg-btn" data-view="table">▤ Tablo</button>
+        <button class="seg-btn active" data-view="cards">▦ Cards</button>
+        <button class="seg-btn" data-view="table">▤ Table</button>
       </div>
-      <button id="exportBtn" class="btn ghost">⬇ CSV indir</button>
+      <button id="exportBtn" class="btn ghost">⬇ Export CSV</button>
     </div>
   </section>
 
@@ -79,24 +79,24 @@
   <dialog id="briefDialog" class="brief-dialog">
     <div id="briefBody"></div>
     <div class="brief-actions">
-      <button id="briefCopy" type="button" class="btn">📋 Kopyala</button>
-      <form method="dialog"><button class="btn ghost">Kapat</button></form>
+      <button id="briefCopy" type="button" class="btn">📋 Copy</button>
+      <form method="dialog"><button class="btn ghost">Close</button></form>
     </div>
   </dialog>
 
   <section id="resultsArea">
     <div id="loading" class="state" style="display:none">
-      <div class="spinner"></div><p>Ürünler taranıyor...</p>
+      <div class="spinner"></div><p>Scanning products...</p>
     </div>
     <div id="empty" class="state" style="display:none">
-      <p>😕 Sonuç bulunamadı. Filtreleri gevşet ya da farklı bir kelime dene.</p>
+      <p>😕 No results found. Relax the filters or try another keyword.</p>
     </div>
     <div id="cards" class="cards-grid"></div>
     <div id="tableWrap" class="table-wrap" style="display:none">
       <table id="table">
         <thead><tr>
-          <th>#</th><th>Ürün</th><th>Kategori</th><th>Advertiser</th>
-          <th>Aktif Gün</th><th>Reklam</th><th>Fiyat</th><th>Puan</th><th>Skor</th><th>Linkler</th>
+          <th>#</th><th>Product</th><th>Category</th><th>Advertiser</th>
+          <th>Active Days</th><th>Ads</th><th>Price</th><th>Rating</th><th>Score</th><th>Links</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -104,8 +104,8 @@
   </section>
 
   <footer class="foot">
-    <span>Winning Product Finder · Demo · <span id="footCount">0</span> ürün</span>
-    <span class="muted">Kazanan skoru = aktif süre + reklam ölçeği + puan</span>
+    <span>Winning Product Finder · Demo · <span id="footCount">0</span> products</span>
+    <span class="muted">Winning score = longevity + ad scale + rating</span>
   </footer>
 
   <script src="app.js"></script>

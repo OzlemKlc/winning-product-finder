@@ -71,10 +71,10 @@ function computeScore(product, scoringConfig) {
  * Skoru insan-okur bir "tier"a çevirir (arayüzde rozet olarak kullanılır).
  */
 function tierOf(score) {
-  if (score >= 80) return '🔥 Çok Güçlü';
-  if (score >= 60) return 'Güçlü';
-  if (score >= 40) return 'Orta';
-  return 'Zayıf';
+  if (score >= 80) return '🔥 Very Strong';
+  if (score >= 60) return 'Strong';
+  if (score >= 40) return 'Moderate';
+  return 'Weak';
 }
 
 /**

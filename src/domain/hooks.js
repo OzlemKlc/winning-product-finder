@@ -37,24 +37,24 @@ function firstSentence(text) {
 const HOOK_PATTERNS = [
   {
     id: 'question',
-    label: 'Soru ile açılış',
+    label: 'Question opening',
     test: (t, first) => /\?/.test(first),
   },
   {
     id: 'pain',
-    label: 'Acı nokta / problem',
+    label: 'Pain point / problem',
     test: (t) =>
       /(ağrı|ağrın|kabus|unutuyor|israf|derdi|sorun|yoruldun|bıktın|zor|pain|tired of|struggl|annoying)/.test(t),
   },
   {
     id: 'transformation',
-    label: 'Dönüşüm / iddia',
+    label: 'Transformation / claim',
     test: (t) =>
       /(son ver|elveda|devrim|kurtarıcı|vazgeçilmez|bir numara|hiç olmadığı kadar|game[- ]?changer|life[- ]?changing|must[- ]have|say goodbye)/.test(t),
   },
   {
     id: 'number',
-    label: 'Sayı / somut sonuç',
+    label: 'Number / concrete result',
     // Türkçede yüzde işareti sayıdan önce yazılır ("%100"); İngilizcede sonra ("100%").
     test: (t) =>
       /%\s*\d+/.test(t) ||
@@ -62,30 +62,30 @@ const HOOK_PATTERNS = [
   },
   {
     id: 'convenience',
-    label: 'Kolaylık / taşınabilirlik',
+    label: 'Convenience / portability',
     test: (t) =>
       /(taşınabilir|her yerde|çantana|avuç|tek hareket|tek elle|tek tuş|anında|dokunmadan|kolay|pratik|portable|anywhere|one[- ]click|instantly|easy)/.test(t),
   },
   {
     id: 'audience',
-    label: 'Hedef kitleye seslenme',
+    label: 'Audience call-out',
     test: (t) =>
       /(için ideal|için bir numara|çalışanların|favorisi|gamer|ebeveyn|anneler|öğrenci|kampçı|for (moms|gamers|parents|busy|pet owners))/.test(t),
   },
   {
     id: 'socialProof',
-    label: 'Sosyal kanıt',
+    label: 'Social proof',
     test: (t) =>
       /(favorisi|en çok satan|binlerce|herkes|viral|trend|best[- ]?seller|thousands|everyone|reviews?|5 yıldız)/.test(t),
   },
   {
     id: 'urgency',
-    label: 'Aciliyet / kıtlık',
+    label: 'Urgency / scarcity',
     test: (t) => /(sınırlı|bugün|son \d|stoklar|kaçırma|hemen|limited|today only|hurry|last chance)/.test(t),
   },
   {
     id: 'exclamation',
-    label: 'Ünlemli güçlü açılış',
+    label: 'Strong exclamation opening',
     test: (t, first) => /!$/.test(first),
   },
 ];
@@ -168,23 +168,23 @@ function buildUgcBrief(product) {
   const hookOptions = [];
   if (opener) hookOptions.push({ type: 'original', text: opener });
   if (!patterns.includes('question')) {
-    hookOptions.push({ type: 'question', text: `${name} gerçekten işe yarıyor mu? Denedim.` });
+    hookOptions.push({ type: 'question', text: `Does ${name} really work? I tried it.` });
   }
   if (!patterns.includes('pain')) {
-    hookOptions.push({ type: 'pain', text: `Bunu bilmeden ${name.toLocaleLowerCase('tr-TR')} almayın.` });
+    hookOptions.push({ type: 'pain', text: `Do not buy ${name.toLowerCase()} before you know this.` });
   }
-  hookOptions.push({ type: 'pov', text: `POV: ${name} hayatıma girdi ve…` });
+  hookOptions.push({ type: 'pov', text: `POV: ${name} entered my life and…` });
 
   return {
     product: name,
-    format: 'UGC · 9:16 · 15 sn',
+    format: 'UGC · 9:16 · 15 sec',
     provenAngles: patterns.map((id) => (PATTERN_BY_ID[id] ? PATTERN_BY_ID[id].label : id)),
     hookOptions: hookOptions.slice(0, 3),
     shotList: [
-      { t: '0–3 sn', shot: 'Yüz kameraya, ürün elde', say: hookOptions[0] ? hookOptions[0].text : name },
-      { t: '3–7 sn', shot: 'Problem anı (ürünsüz hâl)', say: painLine },
-      { t: '7–12 sn', shot: 'Ürün kullanımda, yakın plan', say: benefit },
-      { t: '12–15 sn', shot: 'Sonuç + ürün tekrar görünür', say: 'Link profilde / Şimdi dene.' },
+      { t: '0–3 sec', shot: 'Presenter faces camera and holds the product', say: hookOptions[0] ? hookOptions[0].text : name },
+      { t: '3–7 sec', shot: 'Show the problem before using the product', say: painLine },
+      { t: '7–12 sec', shot: 'Close-up of the product in use', say: benefit },
+      { t: '12–15 sec', shot: 'Result and product return on screen', say: 'See the link / Try it now.' },
     ],
     signals: {
       winningScore: product.winningScore ?? null,
