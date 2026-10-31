@@ -14,8 +14,14 @@
  *   - buildUgcBrief(product)   → 15 sn'lik UGC video brifi (hook seçenekleri + çekim planı)
  */
 
-/** Türkçe-duyarlı küçük harf (İ/ı sorununu çözer). */
-const lower = (s) => String(s || '').toLocaleLowerCase('tr-TR');
+/**
+ * Türkçe + İngilizce küçük harf. tr-TR "I"yı noktasız "ı" yapar ("I tried" → "ı tried"),
+ * bu yüzden İngilizce kalıplar için standart küçük harf de eklenir.
+ */
+const lower = (s) => {
+  const str = String(s || '');
+  return `${str.toLocaleLowerCase('tr-TR')}\n${str.toLowerCase()}`;
+};
 
 /** Metnin ilk cümlesi (hook genelde buradadır). */
 function firstSentence(text) {
@@ -165,7 +171,7 @@ function buildUgcBrief(product) {
     hookOptions.push({ type: 'question', text: `${name} gerçekten işe yarıyor mu? Denedim.` });
   }
   if (!patterns.includes('pain')) {
-    hookOptions.push({ type: 'pain', text: `Bunu bilmeden ${lower(name)} almayın.` });
+    hookOptions.push({ type: 'pain', text: `Bunu bilmeden ${name.toLocaleLowerCase('tr-TR')} almayın.` });
   }
   hookOptions.push({ type: 'pov', text: `POV: ${name} hayatıma girdi ve…` });
 

@@ -107,3 +107,17 @@ test('demo verisinin tamamı en az bir hook kalıbı taşır', () => {
     assert.ok(p.hooks.patterns.length > 0, `${p.productName} için kalıp bulunamadı`);
   }
 });
+
+test('İngilizce "I" Türkçe küçük harfe çevrilince bozulmaz', () => {
+  // tr-TR: "I" -> "ı"; "Instantly" "ınstantly" olup kaçmamalı
+  assert.ok(detectHooks('Instantly portable. Works anywhere.').patterns.includes('convenience'));
+  assert.ok(detectHooks('LIMITED stock — hurry!').patterns.includes('urgency'));
+});
+
+test('UGC brief metinleri tek satır (eşleştirme metni brife sızmaz)', () => {
+  for (const raw of demo) {
+    const b = buildUgcBrief(enrich(raw, config.scoring));
+    for (const h of b.hookOptions) assert.ok(!h.text.includes('\n'), h.text);
+    for (const s of b.shotList) assert.ok(!s.say.includes('\n'), s.say);
+  }
+});
