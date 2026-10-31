@@ -46,7 +46,7 @@ cp .env.example .env
 npm start
 ```
 
-Switch to the **Canlı (Apify)** tab in the UI. If the token is set on the server, you don't need to enter it in the UI (the preferred, more secure path).
+Switch to the **Live (Apify)** tab in the UI. If the token is set on the server, you don't need to enter it in the UI (the preferred, more secure path).
 
 ### AI analysis (OpenAI function calling)
 
@@ -113,14 +113,14 @@ curl -X POST localhost:4545/api/search \
 {
   "source": "demo",
   "count": 2, "avgDays": 210, "avgScore": 58, "strong": 1,
-  "hookRadar": [ { "id": "number", "label": "Sayı / somut sonuç", "count": 2, "share": 100, "avgScore": 58, "lowSample": false } ],
+  "hookRadar": [ { "id": "number", "label": "Number / concrete result", "count": 2, "share": 100, "avgScore": 58, "lowSample": false } ],
   "items": [
     {
       "productName": "RGB LED Strip Light (5m)",
       "winningScore": 87,
-      "tier": "🔥 Çok Güçlü",
+      "tier": "🔥 Very Strong",
       "scoreBreakdown": { "longevity": 37, "adScale": 29, "rating": 11, "freshness": 10 },
-      "hooks": { "opener": "Odanı 16 milyon renge boya!", "patterns": ["transformation", "number", "audience", "exclamation"] },
+      "hooks": { "opener": "Transform your room with 16 million colors!", "patterns": ["transformation", "number", "audience", "exclamation"] },
       "ugcBrief": { "format": "UGC · 9:16 · 15 sn", "hookOptions": ["…"], "shotList": ["…"] }
     }
   ],

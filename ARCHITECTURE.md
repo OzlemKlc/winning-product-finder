@@ -1,165 +1,87 @@
-# Mimari — Winning Product Finder
+# Architecture
 
-Bu doküman sistemin **neden** bu şekilde yapılandırıldığını ve katmanların nasıl
-ayrıştığını anlatır. Amaç: her problemi LLM'e atmadan, **deterministik olarak
-çözülebilen kısmı kod tarafında** çözen; kaynak/depolama/transport'u birbirinden
-bağımsız, test edilebilir ve genişletilebilir bir sistem.
+Winning Product Finder separates deterministic product research from optional model-assisted interpretation. The goal is a testable, explainable core with replaceable data sources, storage, and transport layers.
 
-## Tasarım prensipleri
+## Design principles
 
-1. **Katmanlı ve tek-yönlü bağımlılık.** Üst katman alt katmanı çağırır; tersi olmaz.
-   `server → services → (providers | domain | repositories)`. Domain hiçbir şeyi bilmez.
-2. **Transport'tan bağımsız iş mantığı.** Yerel HTTP sunucusu ve Vercel serverless
-   fonksiyonu *aynı* `searchService.runSearch()`'i çağırır — kod tekrarı yok.
-3. **Strategy ile açık/kapalı genişleme.** Yeni bir veri kaynağı = yeni bir provider
-   + registry kaydı. Servis/HTTP değişmez.
-4. **Graceful degradation.** DB yoksa in-memory'ye, canlı mod hatalıysa anlamlı
-   502 + hint'e, persist hatası aramayı düşürmeden uyarıya düşer.
-5. **Config-driven davranış.** Skor ağırlıkları, tavanlar, portlar, token'lar tek
-   bir `config` modülünden gelir; `process.env`'e başka yerde dokunulmaz.
+1. **One-way dependencies:** `server -> services -> providers/domain/repositories`.
+2. **Transport-independent business logic:** local HTTP and serverless adapters call the same service layer.
+3. **Strategy-based providers:** new sources are added through the provider registry.
+4. **Graceful degradation:** the application works in demo mode without a database or API key.
+5. **Central configuration:** environment variables are read only by `src/config`.
+6. **Deterministic first:** rules handle scoring and hook detection; OpenAI is used only for optional semantic analysis.
 
-## Katmanlar
+## Layers
 
-| Katman | Klasör | Sorumluluk |
-|--------|--------|------------|
-| Config | `src/config` | `.env` yükleme, tipli/doğrulanmış ayarlar, skor ağırlıkları |
-| Domain | `src/domain` | Saf iş kuralları: `scoring` (100p motor), `product` modeli |
-| Providers | `src/providers` | Kaynak adaptörleri (`demo`, `apify`) + `llm/` OpenAI istemcisi |
-| Services | `src/services` | `searchService` (orchestration) + `insightService` (LLM tool-calling) |
-| Repositories | `src/repositories` | Kalıcılık: `postgres` + `memory` + `factory` |
-| Validation | `src/validation` | İstek doğrulama & sanitizasyon |
-| Server | `src/server` | HTTP transport: sunucu, router, controller, statik |
-| Utils | `src/utils` | `logger`, tipli `errors` |
-
-## Bileşen ilişkileri
+| Layer | Location | Responsibility |
+|---|---|---|
+| Configuration | `src/config` | Environment loading, validated settings, scoring weights |
+| Domain | `src/domain` | Product normalization, scoring, Hook Radar, UGC briefs |
+| Providers | `src/providers` | Demo, Apify, and OpenAI adapters |
+| Services | `src/services` | Search orchestration and optional insight enrichment |
+| Repositories | `src/repositories` | PostgreSQL and in-memory persistence |
+| Validation | `src/validation` | Request validation and sanitization |
+| Transport | `src/server`, `api/` | Local HTTP and serverless adapters |
 
 ```mermaid
 flowchart TD
-    subgraph Client["Arayüz (public/)"]
-      UI["Vanilla JS · kart/tablo · CSV"]
-    end
-
-    subgraph Transport["Transport katmanı"]
-      HTTP["src/server/httpServer.js"]
-      VERCEL["api/search.js (serverless)"]
-      CTRL["controllers/searchController.js"]
-    end
-
-    subgraph App["Uygulama katmanı"]
-      VAL["validation/searchQuery.js"]
-      SVC["services/searchService.js"]
-      INS["services/insightService.js — LLM tool-calling"]
-    end
-
-    subgraph Domain["Domain (saf)"]
-      SCORE["domain/scoring.js — 100p motor"]
-      PROD["domain/product.js — normalize+enrich"]
-    end
-
-    subgraph Providers["Providers (strategy)"]
-      REG["providers/index.js (registry)"]
-      DEMO["demoProvider"]
-      APIFY["apifyProvider → Meta Ad Library"]
-    end
-
-    subgraph LLM["AI analiz (opsiyonel)"]
-      OPENAI["providers/llm/openaiClient → OpenAI Responses API"]
-    end
-
-    subgraph Persistence["Repositories (factory)"]
-      REPO["repositories/index.js"]
-      PG["postgresRepository (pg, lazy)"]
-      MEM["memoryRepository (fallback)"]
-    end
-
-    UI -->|POST /api/search| HTTP --> CTRL
-    VERCEL --> SVC
-    CTRL --> SVC
-    SVC --> VAL
-    SVC --> REG --> DEMO & APIFY
-    SVC --> PROD --> SCORE
-    SVC --> INS --> OPENAI
-    SVC --> REPO --> PG & MEM
+    UI[Web UI] --> HTTP[HTTP controller]
+    API[Serverless adapter] --> SEARCH[Search service]
+    HTTP --> SEARCH
+    SEARCH --> VALIDATE[Validation]
+    SEARCH --> PROVIDERS[Provider registry]
+    PROVIDERS --> DEMO[Demo provider]
+    PROVIDERS --> APIFY[Apify provider]
+    SEARCH --> DOMAIN[Normalize, score, Hook Radar, UGC brief]
+    SEARCH --> INSIGHT[Optional insight service]
+    INSIGHT --> OPENAI[OpenAI Responses API]
+    SEARCH --> REPOSITORY[Repository factory]
+    REPOSITORY --> POSTGRES[PostgreSQL/Supabase]
+    REPOSITORY --> MEMORY[In-memory fallback]
 ```
 
-## Arama boru hattı (pipeline)
+## Search pipeline
 
-`searchService.runSearch()` şu deterministik adımları yürütür:
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant S as searchService
-    participant V as validation
-    participant P as provider
-    participant D as domain(scoring)
-    participant R as repository
-
-    C->>S: runSearch(rawQuery)
-    S->>V: validate & sanitize
-    V-->>S: güvenli query
-    S->>P: fetch(query)  (demo | apify)
-    P-->>S: ham ürünler
-    S->>D: enrich + score (0..100)
-    D-->>S: skorlu ürünler + kırılım
-    S->>S: sort
-    opt analyze=true ve OPENAI_API_KEY var
-      S->>S: insightService.enrichWithInsights(top N)
-      Note right of S: OpenAI function calling → niş/hook/açı (best-effort)
-    end
-    S->>S: summarize
-    S->>R: saveSearch(...)  (best-effort)
-    R-->>S: searchId
-    S-->>C: { source, count, avg*, items, searchId }
+```text
+Validate -> Collect -> Normalize -> Score -> Sort -> Build Hook Radar
+         -> Build UGC briefs -> Optional OpenAI insights -> Persist -> Return
 ```
 
-**Validate → Collect → Transform+Score → Sort → Persist → Output.** Her adımın
-tek sorumluluğu vardır ve bir adımın çıktısı diğerinin girdisidir.
+Every step has one responsibility. Provider output is normalized before domain logic runs, so downstream code does not depend on an external source schema.
 
-## Veri modeli
+## Scoring
 
-```mermaid
-erDiagram
-    searches ||--o{ search_items : contains
-    searches {
-      bigserial id PK
-      timestamptz created_at
-      text source
-      jsonb query
-      jsonb summary
-      int item_count
-    }
-    search_items {
-      bigserial id PK
-      bigint search_id FK
-      text product_name
-      int days_active
-      int ad_count
-      int winning_score
-      text tier
-      jsonb payload
-    }
-```
+The default score is a 100-point weighted model:
 
-Şema: [`db/schema.sql`](./db/schema.sql). Supabase yönetilen bir Postgres olduğu
-için aynı `pg` sürücüsü ve `DATABASE_URL` ile çalışır; ek istemci gerekmez.
+- Ad longevity: 45 points
+- Ad scale: 30 points
+- Product rating: 15 points
+- Freshness: 10 points
 
-## Neden LLM çekirdekte değil?
+Weights and normalization caps are configurable through environment variables. The scoring function is deterministic and covered by unit tests.
 
-Skorlama sayısal ve deterministik olarak çözülebilir; bu yüzden `domain/scoring.js`
-saf bir fonksiyondur (test edilebilir, tekrar-üretilebilir, ücretsiz). LLM ise yalnızca
-gerçekten **anlamsal yorum** gereken adımda devreye girer: `insightService`, reklam
-metninden niş/hook/açı çıkarımını **tool/function-calling** ile yapar — modelden serbest
-metin değil, `record_ad_insight` şemasına uyan yapılandırılmış çıktı istenir (`tool_choice`
-ile zorlanır). Bu adım opsiyonel (`analyze=true`), best-effort ve maliyet için yalnızca
-sıralamanın en üstündeki N ürünle sınırlıdır; anahtar yoksa sessizce kapanır. Bu ayrım
-maliyeti düşürür ve deterministik çekirdeği açıklanabilir tutar.
-`automation/n8n-facebook-ads-workflow.json`, bu boru hattının no-code/agentic bir
-varyantını (Apify → normalize → analiz) referans olarak içerir.
+## Hook Radar and UGC briefs
 
-## Güvenlik notları
+`src/domain/hooks.js` detects repeatable ad-copy patterns such as questions, pain points, transformations, numbers, convenience, audience call-outs, social proof, and urgency. Patterns are ranked by the average product score of the ads using them rather than raw frequency.
 
-- Sırlar `.gitignore` ile dışlanır (`.env`, `.mcp.json`, `*.key`, `*.pem`, `secrets/`).
-- Apify token'ı sunucu env'inde tutulur; arayüz girişi opsiyonel kolaylıktır.
-- Girdi doğrulama, gövde-boyutu sınırı ve statik sunumda path-traversal koruması vardır.
-- DB kimlik bilgileri yalnızca `DATABASE_URL`/Supabase env'inde; koda gömülmez.
+The highest-ranked products receive deterministic 15-second UGC briefs with hook options and a four-shot plan. This output can be passed to AdForge for creative production.
+
+## Optional OpenAI insight layer
+
+When `OPENAI_API_KEY` is configured and a search requests analysis, `insightService` sends only the highest-ranked products to the OpenAI Responses API. Function calling returns structured niche, hook, angle, audience, pain-point, and confidence fields.
+
+This stage is best-effort and cost-limited. Failures do not break the deterministic search pipeline.
+
+## Persistence
+
+The repository factory selects PostgreSQL when `DATABASE_URL` is configured and otherwise uses an in-memory repository. Supabase works through its PostgreSQL connection string; no separate client is required.
+
+Database schema: [`db/schema.sql`](./db/schema.sql).
+
+## Security
+
+- Secrets and local environment files are excluded by `.gitignore`.
+- Apify and OpenAI credentials remain server-side.
+- Input validation and request-size limits run before provider calls.
+- Static-file serving includes path-traversal protection.
+- Database credentials are never embedded in source code.
