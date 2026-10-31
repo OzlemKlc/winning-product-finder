@@ -82,6 +82,8 @@ docker compose up --build
 
 - 🔍 Keyword / category / minimum-active-days filters
 - 🏆 **100-point weighted winning score** (config-driven) with a per-signal breakdown
+- 🪝 **Hook Radar**: deterministic hook-pattern detection on every ad (question, pain point, transformation, numbers, convenience, audience call-out, social proof, urgency); shows which patterns the *winning* ads use — free, offline, works in demo mode
+- 🎬 **UGC brief**: for the top products, a ready-to-shoot 15-second UGC video brief (3 hook options + 4-shot plan), copyable from the card — the bridge into AI video generation (AdForge)
 - 🧠 **Optional AI analysis**: niche/hook/angle extraction from ad copy via OpenAI **function calling**
 - ▦ Card and ▤ table views, ⬇ CSV export (Excel-friendly, UTF-8)
 - 📡 Two data sources: **Demo** (offline) and **Live** (Apify → Meta Ad Library)
@@ -111,12 +113,15 @@ curl -X POST localhost:4545/api/search \
 {
   "source": "demo",
   "count": 2, "avgDays": 210, "avgScore": 58, "strong": 1,
+  "hookRadar": [ { "id": "number", "label": "Sayı / somut sonuç", "count": 2, "share": 100, "avgScore": 58, "lowSample": false } ],
   "items": [
     {
       "productName": "RGB LED Strip Light (5m)",
       "winningScore": 87,
       "tier": "🔥 Çok Güçlü",
-      "scoreBreakdown": { "longevity": 37, "adScale": 29, "rating": 11, "freshness": 10 }
+      "scoreBreakdown": { "longevity": 37, "adScale": 29, "rating": 11, "freshness": 10 },
+      "hooks": { "opener": "Odanı 16 milyon renge boya!", "patterns": ["transformation", "number", "audience", "exclamation"] },
+      "ugcBrief": { "format": "UGC · 9:16 · 15 sn", "hookOptions": ["…"], "shotList": ["…"] }
     }
   ],
   "searchId": 1
@@ -140,6 +145,18 @@ Weights are configurable via `.env` (`SCORE_W_*`) without touching code.
 
 ---
 
+## How Hook Radar works
+
+Same principle as the score: **if a rule can solve it, it doesn't go to an LLM.** `src/domain/hooks.js` detects hook patterns in each ad's copy with Turkish-aware rules (correct `İ/ı` lower-casing, `%100` vs `100%`), then aggregates them across the results:
+
+- Patterns are ranked by the **average winning score** of the products that use them, not by frequency — the goal is "what do winners do", not "what is common".
+- Patterns seen in only one product are marked `lowSample` and pushed down, so a single high-scoring ad can't make a pattern look like a winner.
+- The top `UGC_BRIEF_TOP_N` products (default 5) get a deterministic UGC brief: the original hook, alternative hooks for angles the ad *didn't* use, and a 0–3 / 3–7 / 7–12 / 12–15 s shot plan.
+
+The optional OpenAI analysis still adds deeper, semantic insight on top when an API key is set.
+
+---
+
 ## Project structure
 
 ```
@@ -147,7 +164,7 @@ winning-product-finder/
 ├── src/
 │   ├── index.js                # Entry point (starts the HTTP server)
 │   ├── config/                 # Central config + .env loading + score weights
-│   ├── domain/                 # Business rules: scoring (100-pt engine) + product model
+│   ├── domain/                 # Business rules: scoring (100-pt engine), hooks (Hook Radar + UGC brief), product model
 │   ├── providers/              # Data-source adapters (demo, apify) + llm/ (OpenAI client)
 │   ├── services/               # Orchestration (searchService) + insightService (LLM tool-calling)
 │   ├── repositories/           # Persistence: postgres + memory + factory (fallback)
@@ -178,6 +195,8 @@ winning-product-finder/
 ## Roadmap
 
 - [x] LLM layer: niche/hook/angle extraction from ad copy (tool/function-calling)
+- [x] Hook Radar + UGC brief (deterministic, offline)
+- [ ] Send UGC briefs straight into AdForge for AI video generation
 - [ ] Semantic search (embeddings + pgvector) on Supabase
 - [ ] RAG: enrich analysis with past winning products
 - [ ] Additional source providers (TikTok Creative Center) — plugs into the existing provider interface

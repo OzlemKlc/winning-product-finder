@@ -9,6 +9,7 @@
  */
 
 const { computeScore, tierOf } = require('./scoring');
+const { detectHooks } = require('./hooks');
 
 /**
  * Kanonik ürün alanları — dokümantasyon ve DB şeması ile hizalıdır.
@@ -68,7 +69,13 @@ function toProduct(raw = {}) {
 function enrich(raw, scoringConfig) {
   const product = toProduct(raw);
   const { score, breakdown } = computeScore(product, scoringConfig);
-  return { ...product, winningScore: score, tier: tierOf(score), scoreBreakdown: breakdown };
+  return {
+    ...product,
+    winningScore: score,
+    tier: tierOf(score),
+    scoreBreakdown: breakdown,
+    hooks: detectHooks(product.adCopy),
+  };
 }
 
 function cryptoRandomId() {

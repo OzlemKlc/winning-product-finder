@@ -18,6 +18,7 @@ const { getProvider } = require('../providers');
 const { getRepository } = require('../repositories');
 const { enrich } = require('../domain/product');
 const { enrichWithInsights } = require('./insightService');
+const { buildHookRadar, buildUgcBrief } = require('../domain/hooks');
 const { validateSearchQuery } = require('../validation/searchQuery');
 
 /**
@@ -62,8 +63,15 @@ async function runSearch(rawQuery = {}, opts = {}) {
     items = await enrichWithInsights(items);
   }
 
+  // 4c) Hook Radar + UGC brief — deterministik, ücretsiz; demo modunda da çalışır.
+  //     Brif, sıralamanın en üstündeki N ürün için üretilir (AdForge'a girdi olarak).
+  const briefTopN = config.ugc.briefTopN;
+  items.slice(0, briefTopN).forEach((p) => {
+    p.ugcBrief = buildUgcBrief(p);
+  });
+
   // 5) Summary
-  const summary = { ...summarize(items), source: provider.name };
+  const summary = { ...summarize(items), hookRadar: buildHookRadar(items), source: provider.name };
 
   // 6) Persist — best-effort; kalıcılık hatası aramayı düşürmez
   let searchId;

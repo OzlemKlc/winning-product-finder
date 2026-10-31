@@ -170,3 +170,36 @@ td a:hover { text-decoration: underline; }
 .insight{margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:linear-gradient(135deg,rgba(109,94,252,.14),rgba(180,92,255,.10));border:1px solid rgba(109,94,252,.35);font-size:12.5px;color:#dfe4f2;display:flex;flex-wrap:wrap;align-items:center;gap:6px;line-height:1.5}
 .insight .chip.angle{background:rgba(109,94,252,.30);color:#e9e5ff;padding:1px 8px;border-radius:999px;font-size:11px}
 .insight .aud{color:#9aa6bd;font-size:11.5px}
+
+/* --- Hook Radar + UGC brief --- */
+.hook-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:6px 0 2px;font-size:12px}
+.chip.hook{color:#ffd479;border-color:#4a3b16;background:rgba(255,176,32,.08)}
+.hook-radar{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin:0 0 18px}
+.radar-head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:10px}
+.radar-head .muted{font-size:12px}
+.radar-rows{display:grid;gap:7px}
+.radar-row{display:grid;grid-template-columns:minmax(120px,190px) 1fr minmax(150px,auto);gap:10px;align-items:center;font-size:12.5px}
+.radar-bar{height:8px;border-radius:999px;background:#1b2336;overflow:hidden}
+.radar-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-3))}
+.radar-val{color:var(--muted);text-align:right;white-space:nowrap}
+.radar-val b{color:var(--text)}
+.brief-btn{font:inherit;font-size:12.5px;padding:7px 10px;border-radius:10px;border:1px solid #4a3b16;background:rgba(255,176,32,.10);color:#ffd479;cursor:pointer}
+.brief-btn:hover{background:rgba(255,176,32,.18)}
+.brief-dialog{max-width:640px;width:calc(100% - 32px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.brief-dialog::backdrop{background:rgba(5,8,14,.7)}
+.brief-dialog h3{margin:0 0 6px}
+.brief-dialog h4{margin:14px 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.brief-dialog ol{margin:0;padding-left:20px;line-height:1.6}
+.brief-table{width:100%;border-collapse:collapse;font-size:13px}
+.brief-table td{border-top:1px solid var(--line);padding:7px 6px;vertical-align:top}
+.brief-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.brief-actions form{margin:0}
+@media (max-width:640px){
+  .radar-row{grid-template-columns:1fr;gap:4px}
+  .radar-val{text-align:left}
+}
+.brief-dialog{margin:auto}
+.brief-angles{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px}
+.chip.hook{white-space:nowrap}
+.brief-btn{white-space:nowrap}
+.radar-row.low{opacity:.55}
