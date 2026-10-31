@@ -88,6 +88,11 @@ const config = {
     analyzeTopN: int(process.env.LLM_ANALYZE_TOP_N, 5),
   },
 
+  /** UGC brif üretimi (Hook Radar). Deterministik; API anahtarı gerektirmez. */
+  ugc: {
+    briefTopN: int(process.env.UGC_BRIEF_TOP_N, 5),
+  },
+
   /**
    * Kalıcılık katmanı. DATABASE_URL (veya Supabase bilgileri) verilmezse
    * uygulama otomatik olarak in-memory repository'ye düşer ve env'siz çalışır.
