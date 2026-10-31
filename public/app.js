@@ -73,6 +73,7 @@ function cardHTML(p, i) {
         <span class="advertiser">👤 <b>${esc(p.advertiser)}</b></span>
       </div>
       <p class="adcopy">${esc(p.adCopy || '')}</p>
+      ${hookChips(p)}
       ${p.insight ? `<div class="insight">🧠 <b>${esc(p.insight.hook || '')}</b>${p.insight.angle ? ` <span class="chip angle">${esc(p.insight.angle)}</span>` : ''}${p.insight.audience ? `<span class="aud">👥 ${esc(p.insight.audience)}</span>` : ''}</div>` : ''}
       <div class="metrics">
         <div class="metric"><div class="v days">${p.daysActive}g</div><div class="k">Aktif süre</div></div>
@@ -86,10 +87,75 @@ function cardHTML(p, i) {
       <div class="actions">
         <a href="${adLink(p)}" target="_blank" rel="noopener">📚 Meta Reklamları</a>
         ${p.amazonUrl ? `<a class="amazon" href="${p.amazonUrl}" target="_blank" rel="noopener">🛒 Amazon</a>` : ''}
+        ${p.ugcBrief ? `<button type="button" class="brief-btn" data-brief="${i}">🎬 UGC Brif</button>` : ''}
       </div>
     </div>
   </article>`;
 }
+
+// --- Hook Radar + UGC brief ---
+const HOOK_LABEL = {
+  question: 'Soru', pain: 'Acı nokta', transformation: 'Dönüşüm', number: 'Sayı',
+  convenience: 'Kolaylık', audience: 'Hedef kitle', socialProof: 'Sosyal kanıt',
+  urgency: 'Aciliyet', exclamation: 'Ünlem'
+};
+
+function hookChips(p) {
+  const pats = (p.hooks && p.hooks.patterns) || [];
+  if (!pats.length) return '';
+  return `<div class="hook-chips" title="Hook Radar: reklam metnindeki kanca kalıpları">🪝 ${pats
+    .map(id => `<span class="chip hook">${esc(HOOK_LABEL[id] || id)}</span>`).join('')}</div>`;
+}
+
+function renderHookRadar(radar) {
+  const el = $('#hookRadar');
+  if (!el) return;
+  if (!radar || !radar.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  const max = Math.max(...radar.map(r => r.avgScore), 1);
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="radar-head"><b>🪝 Hook Radar</b><span class="muted">Kazanan reklamlarda hangi kanca kalıpları öne çıkıyor? (ort. kazanan skoruna göre)</span></div>
+    <div class="radar-rows">${radar.map(r => `
+      <div class="radar-row${r.lowSample ? ' low' : ''}" ${r.lowSample ? 'title="Tek üründe görüldü — karar vermek için yetersiz örnek"' : ''}>
+        <span class="radar-label">${esc(r.label)}</span>
+        <span class="radar-bar"><span style="width:${Math.round((r.avgScore / max) * 100)}%"></span></span>
+        <span class="radar-val"><b>${r.avgScore}</b> skor · ${r.count} ürün (%${r.share})${r.lowSample ? ' · az örnek' : ''}</span>
+      </div>`).join('')}
+    </div>`;
+}
+
+function briefText(b) {
+  return [
+    `UGC BRİF — ${b.product} (${b.format})`,
+    `Kanıtlanmış açılar: ${b.provenAngles.join(', ') || '—'}`,
+    '', 'Hook seçenekleri:', ...b.hookOptions.map((h, i) => `${i + 1}. ${h.text}`),
+    '', 'Çekim planı:', ...b.shotList.map(s => `[${s.t}] ${s.shot} → "${s.say}"`),
+    '', `Sinyaller: skor ${b.signals.winningScore}, ${b.signals.daysActive} gün aktif, ${b.signals.adCount} reklam`
+  ].join('\n');
+}
+
+function openBrief(i) {
+  const p = state.items[i];
+  if (!p || !p.ugcBrief) return;
+  const b = p.ugcBrief;
+  const dlg = $('#briefDialog');
+  $('#briefBody').innerHTML = `
+    <h3>🎬 ${esc(b.product)} <span class="muted">· ${esc(b.format)}</span></h3>
+    <div class="brief-angles"><span class="muted">Kanıtlanmış açılar:</span> ${b.provenAngles.map(a => `<span class="chip hook">${esc(a)}</span>`).join('') || '—'}</div>
+    <h4>Hook seçenekleri</h4>
+    <ol>${b.hookOptions.map(h => `<li>${esc(h.text)}</li>`).join('')}</ol>
+    <h4>Çekim planı</h4>
+    <table class="brief-table"><tbody>${b.shotList.map(s => `<tr><td><b>${esc(s.t)}</b></td><td>${esc(s.shot)}</td><td>“${esc(s.say)}”</td></tr>`).join('')}</tbody></table>`;
+  $('#briefCopy').onclick = () => {
+    navigator.clipboard.writeText(briefText(b)).then(() => { $('#briefCopy').textContent = '✓ Kopyalandı'; setTimeout(() => { $('#briefCopy').textContent = '📋 Kopyala'; }, 1500); });
+  };
+  if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.brief-btn');
+  if (btn) openBrief(Number(btn.dataset.brief));
+});
 
 function rowHTML(p, i) {
   return `<tr>
@@ -125,6 +191,8 @@ function render(data) {
     <div class="stat"><div class="num">${data.avgScore}</div><div class="lbl">Ort. kazanan skoru</div></div>
     <div class="stat"><div class="num">${state.items.filter(p => p.winningScore >= 80).length}</div><div class="lbl">🔥 Çok güçlü ürün</div></div>`;
 
+  renderHookRadar(data.hookRadar);
+
   $('#footCount').textContent = data.count;
   $('#empty').style.display = data.count ? 'none' : 'block';
 
@@ -154,7 +222,8 @@ async function search() {
     const res = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Hata');
-    // client-side sort
+    // Sunucu zaten `sort` anahtarına göre sıralı döndürür; burada yeniden sıralamak
+    // kart index'leri ile UGC brif butonlarının eşleşmesini bozmaz (stabil sıralama).
     const key = body.sort;
     data.items.sort((a, b) => (b[key] || 0) - (a[key] || 0));
     render(data);
@@ -169,10 +238,11 @@ async function search() {
 
 function exportCSV() {
   if (!state.items.length) return alert('Önce arama yap.');
-  const cols = ['productName', 'niche', 'advertiser', 'daysActive', 'adCount', 'estPrice', 'currency', 'rating', 'winningScore', 'tier', 'landingUrl', 'amazonUrl'];
-  const head = ['Ürün', 'Kategori', 'Advertiser', 'AktifGün', 'ReklamSayısı', 'Fiyat', 'ParaBirimi', 'Puan', 'KazananSkoru', 'Seviye', 'ReklamLink', 'AmazonLink'];
+  const cols = ['productName', 'niche', 'advertiser', 'daysActive', 'adCount', 'estPrice', 'currency', 'rating', 'winningScore', 'tier', 'hookPatterns', 'landingUrl', 'amazonUrl'];
+  const head = ['Ürün', 'Kategori', 'Advertiser', 'AktifGün', 'ReklamSayısı', 'Fiyat', 'ParaBirimi', 'Puan', 'KazananSkoru', 'Seviye', 'HookKalıpları', 'ReklamLink', 'AmazonLink'];
   const esc2 = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const rows = state.items.map(p => cols.map(c => esc2(p[c])).join(','));
+  const val = (p, c) => c === 'hookPatterns' ? ((p.hooks && p.hooks.patterns) || []).map(id => HOOK_LABEL[id] || id).join(' | ') : p[c];
+  const rows = state.items.map(p => cols.map(c => esc2(val(p, c))).join(','));
   const csv = '﻿' + head.join(',') + '\n' + rows.join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
