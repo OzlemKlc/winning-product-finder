@@ -1,5 +1,7 @@
 # 🏆 Winning Product Finder
 
+> Actively developed and maintained with [OpenAI Codex](https://openai.com/codex/).
+
 > A layered product-research tool that surfaces **winning products** from the Meta (Facebook/Instagram) Ad Library.
 
 It ranks products with a deterministic **100-point weighted "winning score"**, shows them as cards or a table, exports to CSV, and (optionally) persists every search to Postgres/Supabase. An optional AI layer analyses ad copy with Claude via **tool/function-calling**.
